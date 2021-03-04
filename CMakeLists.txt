@@ -35,12 +35,7 @@ SET(ALL_SRC
 # Option to enable/disable building the static library
 option(VISUALISATION "Enable visualisation support" ON)
 option(BUILD_SWIG_PYTHON "Enable python bindings via SWIG" ON)
-option(BUILD_SWIG_PYTHON_VIRTUAL_ENV "Enable building of SWIG Python Virtual Env for Python Testing" ON)
-
-if(BUILD_SWIG_PYTHON)
-    add_subdirectory(swig)
-endif()
-add_subdirectory(examples/boids_ensemble)
+option(BUILD_SWIG_PYTHON_VIRTUALENV "Enable building of SWIG Python Virtual Env for Python Testing" ON)
 
 # Add the executable and set required flags for the target
 add_flamegpu_executable("${PROJECT_NAME}" "${ALL_SRC}" "${FLAMEGPU_ROOT}" "${PROJECT_BINARY_DIR}" TRUE)
@@ -51,3 +46,7 @@ set_property(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"  PROPERTY VS_STARTUP_PROJEC
 # Set the default (visual studio) debugger configure_file
 set_target_properties("${PROJECT_NAME}" PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
                                                    VS_DEBUGGER_COMMAND_ARGUMENTS "-s 100")
+
+if(BUILD_SWIG_PYTHON)
+    add_subdirectory(swig)
+endif()
