@@ -33,7 +33,14 @@ SET(ALL_SRC
 )
 
 # Option to enable/disable building the static library
-option(VISUALISATION "Enable visualisation support" OFF)
+option(VISUALISATION "Enable visualisation support" ON)
+option(BUILD_SWIG_PYTHON "Enable python bindings via SWIG" ON)
+option(BUILD_SWIG_PYTHON_VIRTUAL_ENV "Enable building of SWIG Python Virtual Env for Python Testing" ON)
+
+if(BUILD_SWIG_PYTHON)
+    add_subdirectory(swig)
+endif()
+add_subdirectory(examples/boids_ensemble)
 
 # Add the executable and set required flags for the target
 add_flamegpu_executable("${PROJECT_NAME}" "${ALL_SRC}" "${FLAMEGPU_ROOT}" "${PROJECT_BINARY_DIR}" TRUE)

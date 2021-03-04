@@ -1,5 +1,5 @@
-# FLAMEGPU2 Template Example
-This repository acts as an example to be used as a template for creating standalone FLAMEGPU2 projects.
+# FLAMEGPU2 Ensemble Template Example
+This repository acts as an example to be used as a template for creating standalone FLAMEGPU2 projects runnning ensemble experiments of python(SWIG) based models.
 
 [FLAMEGPU2](https://github.com/FLAMEGPU/FLAMEGPU2_dev) is downloaded via CMake and configured as a dependency of the project.
 
@@ -66,3 +66,9 @@ mkdir build && cd build
 cmake .. -A x64
 ALL_BUILD.sln
 ```
+
+### Ensemble example
+
+An ensemble of boids models can be found at `/examples/boids_ensemble` with variables: `ENSEMBLE_RUNS` to alter the number of models simulated; `POPULATION_SIZE` to set boid agent population size; and `STEPS` to specify how many simulation steps each model in to be run for.
+
+To perform an ensemble experiment a batch file `run_boids_ensemble.bat` has been provided. Alternatively a call to `boids_ensemble.py` within a python environment should be made.
