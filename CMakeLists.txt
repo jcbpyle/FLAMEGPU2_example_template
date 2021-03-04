@@ -28,9 +28,9 @@ SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin/${CMAKE_SYSTE
 
 # Prepare list of source files
 # Can't do this automatically, as CMake wouldn't know when to regen (as CMakeLists.txt would be unchanged)
-SET(ALL_SRC
-    ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cu
-)
+#SET(ALL_SRC
+#    ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cu
+#)
 
 # Option to enable/disable building the static library
 option(VISUALISATION "Enable visualisation support" ON)
@@ -38,15 +38,14 @@ option(BUILD_SWIG_PYTHON "Enable python bindings via SWIG" ON)
 option(BUILD_SWIG_PYTHON_VIRTUALENV "Enable building of SWIG Python Virtual Env for Python Testing" ON)
 
 # Add the executable and set required flags for the target
-add_flamegpu_executable("${PROJECT_NAME}" "${ALL_SRC}" "${FLAMEGPU_ROOT}" "${PROJECT_BINARY_DIR}" TRUE)
+#add_flamegpu_executable("${PROJECT_NAME}" "${ALL_SRC}" "${FLAMEGPU_ROOT}" "${PROJECT_BINARY_DIR}" TRUE)
 
 # Also set as startup project
-set_property(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"  PROPERTY VS_STARTUP_PROJECT "${PROJECT_NAME}")
+#set_property(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"  PROPERTY VS_STARTUP_PROJECT "${PROJECT_NAME}")
 
 # Set the default (visual studio) debugger configure_file
-set_target_properties("${PROJECT_NAME}" PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-                                                   VS_DEBUGGER_COMMAND_ARGUMENTS "-s 100")
+#set_target_properties("${PROJECT_NAME}" PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+#                                                   VS_DEBUGGER_COMMAND_ARGUMENTS "-s 100")
 
-if(BUILD_SWIG_PYTHON)
-    add_subdirectory(swig)
-endif()
+
+add_subdirectory(swig)
