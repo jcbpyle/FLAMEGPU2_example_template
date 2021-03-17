@@ -1,6 +1,7 @@
 # Model output files
 *.xml
 *.bin
+*.pyd
 
 # GoogleTest directories (handled by CMake)
 googletest-build/

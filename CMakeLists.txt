@@ -3,7 +3,7 @@
 cmake_minimum_required(VERSION VERSION 3.12 FATAL_ERROR)
 
 # Name the project and set languages
-project(flamegpu2_example CUDA CXX)
+project(flamegpu2_ensemble_example CUDA CXX)
 
 # Our core dependency is FLAMEGPU2 lib, first lets find it
 include(${CMAKE_CURRENT_LIST_DIR}/cmake/flamegpu2.cmake)
@@ -20,6 +20,13 @@ mark_as_advanced(FORCE BUILD_EXAMPLE_CIRCLES_SPATIAL_3D)
 mark_as_advanced(FORCE BUILD_EXAMPLE_RTC_EXAMPLE)
 mark_as_advanced(FORCE BUILD_TESTS)
 
+# Option to enable/disable building the static library
+option(VISUALISATION "Enable visualisation support" ON)
+
+#Set Python options to on for pyflamegpu build
+option(BUILD_SWIG_PYTHON "Enable python bindings via SWIG" ON)
+option(BUILD_SWIG_PYTHON_VIRTUALENV "Enable building of SWIG Python Virtual Env for Python Testing" ON)
+
 # Include common rules.
 include(${FLAMEGPU_ROOT}/cmake/common.cmake)
 
@@ -28,24 +35,16 @@ SET(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}/bin/${CMAKE_SYSTE
 
 # Prepare list of source files
 # Can't do this automatically, as CMake wouldn't know when to regen (as CMakeLists.txt would be unchanged)
-#SET(ALL_SRC
-#    ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cu
-#)
-
-# Option to enable/disable building the static library
-option(VISUALISATION "Enable visualisation support" ON)
-option(BUILD_SWIG_PYTHON "Enable python bindings via SWIG" ON)
-option(BUILD_SWIG_PYTHON_VIRTUALENV "Enable building of SWIG Python Virtual Env for Python Testing" ON)
+SET(ALL_SRC
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/main.cu
+)
 
 # Add the executable and set required flags for the target
-#add_flamegpu_executable("${PROJECT_NAME}" "${ALL_SRC}" "${FLAMEGPU_ROOT}" "${PROJECT_BINARY_DIR}" TRUE)
+add_flamegpu_executable("${PROJECT_NAME}" "${ALL_SRC}" "${FLAMEGPU_ROOT}" "${PROJECT_BINARY_DIR}" TRUE)
 
 # Also set as startup project
-#set_property(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"  PROPERTY VS_STARTUP_PROJECT "${PROJECT_NAME}")
+set_property(DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"  PROPERTY VS_STARTUP_PROJECT "${PROJECT_NAME}")
 
 # Set the default (visual studio) debugger configure_file
-#set_target_properties("${PROJECT_NAME}" PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
-#                                                   VS_DEBUGGER_COMMAND_ARGUMENTS "-s 100")
-
-
-add_subdirectory(swig)
+set_target_properties("${PROJECT_NAME}" PROPERTIES VS_DEBUGGER_WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}"
+                                                   VS_DEBUGGER_COMMAND_ARGUMENTS "-s 100")

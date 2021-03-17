@@ -12,9 +12,7 @@ POPULATION_SIZE = 64;
 STEPS = 100;
 #STEPS = 10;
 # Change to false if pyflamegpu has not been built with visualisation support
-VISUALISATION = False;
-if not ENSEMBLE:
-    VISUALISATION = True;
+VISUALISATION = True;
 
 """
   FLAME GPU 2 implementation of the Boids model, using spatial3D messaging.
@@ -516,7 +514,7 @@ else:
 # simulation.exportData("end.xml");
 
 # Join Visualisation
-if pyflamegpu.VISUALISATION and VISUALISATION:
+if pyflamegpu.VISUALISATION and VISUALISATION and not ENSEMBLE:
     visualisation.join();
 
 
