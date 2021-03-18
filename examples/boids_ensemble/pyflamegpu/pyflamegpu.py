@@ -13944,14 +13944,15 @@ class AgentStateVis(object):
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
     __repr__ = _swig_repr
 
-    def __init__(self, _parent, state_name):
+    def __init__(self, parent, state_name):
         r"""
-        :type _parent: :py:class:`AgentVis`
-        :param _parent: Visualisation options for the agent
+        Creates a new AgentStateVis to configure visualisation options for a particular agent-state
+        :type parent: :py:class:`AgentVis`
+        :param parent: Visualisation options for the agent
         :type state_name: string
         :param state_name: State of the agent for which this options should represent
         """
-        _pyflamegpu.AgentStateVis_swiginit(self, _pyflamegpu.new_AgentStateVis(_parent, state_name))
+        _pyflamegpu.AgentStateVis_swiginit(self, _pyflamegpu.new_AgentStateVis(parent, state_name))
 
     def setModel(self, *args):
         r"""
@@ -13998,6 +13999,13 @@ class AgentStateVis(object):
             largest
         """
         return _pyflamegpu.AgentStateVis_setModelScale(self, *args)
+
+    def clearColor(self):
+        r"""Disable custom color, e.g. if you're using a textured model"""
+        return _pyflamegpu.AgentStateVis_clearColor(self)
+
+    def setColor(self, *args):
+        return _pyflamegpu.AgentStateVis_setColor(self, *args)
     __swig_destroy__ = _pyflamegpu.delete_AgentStateVis
 
 # Register AgentStateVis in _pyflamegpu:
@@ -14013,15 +14021,23 @@ class AgentVis(object):
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
     __repr__ = _swig_repr
 
-    def __init__(self, agent):
+    def __init__(self, agent, autopalette=0):
         r"""
         :type agent: CUDAAgent
         :param agent: The CUDAAgent this class is configuring the visualisation for
+        :type autopalette: std::shared_ptr< AutoPalette >, optional
+        :param autopalette: Automatic source of colors for individual agent states
+        Notes: Agent states only receive colors from the autopalette when AgentVis::State() is called for each state
+        By default, all states share the same color from the autopalette
         """
-        _pyflamegpu.AgentVis_swiginit(self, _pyflamegpu.new_AgentVis(agent))
+        _pyflamegpu.AgentVis_swiginit(self, _pyflamegpu.new_AgentVis(agent, autopalette))
 
     def State(self, state_name):
-        r"""Returns the configuration handler for the named state"""
+        r"""
+        Returns the configuration handler for the named state
+        On first use for each state this will assign the state a color from the AutoPalette if available
+        Clear the autopalette first if you wish for it to use the default color
+        """
         return _pyflamegpu.AgentVis_State(self, state_name)
 
     def setXVariable(self, var_name):
@@ -14112,6 +14128,20 @@ class AgentVis(object):
         :param maxLen: World scale of the model's relative to the axis which it is largest
         """
         return _pyflamegpu.AgentVis_setModelScale(self, *args)
+
+    def setAutoPalette(self, ap):
+        r"""
+        Set the auto-palette used to assign agent-state's colors
+        Notes: The color is assigned the first time State() is called, otherwise agents use the default color
+        """
+        return _pyflamegpu.AgentVis_setAutoPalette(self, ap)
+
+    def clearColor(self):
+        r"""Disable custom color and/or auto-palette, e.g. if you're using a textured model"""
+        return _pyflamegpu.AgentVis_clearColor(self)
+
+    def setColor(self, *args):
+        return _pyflamegpu.AgentVis_setColor(self, *args)
     __swig_destroy__ = _pyflamegpu.delete_AgentVis
 
 # Register AgentVis in _pyflamegpu:
@@ -14185,6 +14215,21 @@ class ModelVis(object):
         > On resize, also update textures
         """
         _pyflamegpu.ModelVis_swiginit(self, _pyflamegpu.new_ModelVis(model))
+
+    def setAutoPalette(self, palette):
+        r"""
+        Sets the palette to automatically give color to agent added to the model
+        This can be overriden at an agent level or disabled
+        Similarly, individual agent-states can have their colour overriden
+        """
+        return _pyflamegpu.ModelVis_setAutoPalette(self, palette)
+
+    def clearAutoPalette(self):
+        r"""
+        Disables the auto-palette, subsequently created AgentVis/AgentStateVis will not take colors from it
+        Notes: AgentVis/AgentStateVis which have already sampled a color will not lose their existing color
+        """
+        return _pyflamegpu.ModelVis_clearAutoPalette(self)
 
     def addAgent(self, agent_name):
         r"""
@@ -14471,6 +14516,592 @@ class StaticModelVis(object):
 # Register StaticModelVis in _pyflamegpu:
 _pyflamegpu.StaticModelVis_swigregister(StaticModelVis)
 
+class Color(object):
+    r"""
+    Store for a floating point rgba color
+    Each component should be in the inclusive range [0, 1] in-order for the color to be considered valid
+    """
+
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
+    __repr__ = _swig_repr
+    r = property(_pyflamegpu.Color_r_get, _pyflamegpu.Color_r_set, doc=r"""Color components: red, green, blue, alpha""")
+    g = property(_pyflamegpu.Color_g_get, _pyflamegpu.Color_g_set)
+    b = property(_pyflamegpu.Color_b_get, _pyflamegpu.Color_b_set)
+    a = property(_pyflamegpu.Color_a_get, _pyflamegpu.Color_a_set)
+
+    def __init__(self, *args):
+        r"""
+        *Overload 1:*
+
+        Default constructor, initialises to white
+
+        |
+
+        *Overload 2:*
+
+        Construct a color with red, green, blue (and alpha) components
+        Each component should be in the range [0, 1]
+
+        |
+
+        *Overload 3:*
+
+        Construct a color with red, green, blue (and alpha) components
+        Each component should be in the range [0, 1]
+
+        |
+
+        *Overload 4:*
+
+        Construct a color with red, green, blue (and alpha) components
+        Each component should be in the range [0, 255]
+
+        |
+
+        *Overload 5:*
+
+        Construct a color with red, green, blue (and alpha) components
+        Each component should be in the range [0, 255]
+
+        |
+
+        *Overload 6:*
+
+        Construct a color with red, green and blue components
+        Each component should be in the range [0, 1]
+
+        |
+
+        *Overload 7:*
+
+        Construct a color with red, green, blue and alpha components
+        Each component should be in the range [0, 1]
+
+        |
+
+        *Overload 8:*
+
+        Construct a color with red, green and blue components
+        Each component should be in the range [0, 255]
+
+        |
+
+        *Overload 9:*
+
+        Construct a color with red, green, blue and alpha components
+        Each component should be in the range [0, 255]
+
+        |
+
+        *Overload 10:*
+
+        Construct a color from a hexcode
+        Supported formats:
+        #abcdef
+        #abc
+        abcdef
+        abc
+        :raises: InvalidArgument If parsing fails
+        """
+        _pyflamegpu.Color_swiginit(self, _pyflamegpu.new_Color(*args))
+
+    def validate(self):
+        r"""Return true if all color components are in the inclusive range [0.0, 1.0]"""
+        return _pyflamegpu.Color_validate(self)
+
+    def __eq__(self, other):
+        r"""
+        Equality operator
+        Notes: It performs equality comparison on floats, this isn't too useful as very similar floats can be deemed different
+        """
+        return _pyflamegpu.Color___eq__(self, other)
+
+    def __ne__(self, other):
+        r"""
+        Inequality operator
+        Notes: It performs equality comparison on floats, this isn't too useful as very similar floats can be deemed different
+        """
+        return _pyflamegpu.Color___ne__(self, other)
+
+    def __add__(self, other):
+        r"""Add the components of 2 colors"""
+        return _pyflamegpu.Color___add__(self, other)
+
+    def __mul__(self, i):
+        r"""
+        Multiple the components of a color by i
+        TODO: Rework this to the other format, so color doesnt need to be the first item
+        """
+        return _pyflamegpu.Color___mul__(self, i)
+    __swig_destroy__ = _pyflamegpu.delete_Color
+
+# Register Color in _pyflamegpu:
+_pyflamegpu.Color_swigregister(Color)
+
+class Palette(object):
+    r"""
+    Abstract class for representing collections of const colors
+    Optionally, an enum can be added to sub-classes to allow them to be accessed via a name
+    """
+
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
+
+    def __init__(self, *args, **kwargs):
+        raise AttributeError("No constructor defined - class is abstract")
+    __repr__ = _swig_repr
+    Qualitative = _pyflamegpu.Palette_Qualitative
+    Sequential = _pyflamegpu.Palette_Sequential
+    Diverging = _pyflamegpu.Palette_Diverging
+    __swig_destroy__ = _pyflamegpu.delete_Palette
+
+    def size(self):
+        r"""Returns the number of colors in the palette"""
+        return _pyflamegpu.Palette_size(self)
+
+    def __eq__(self, other):
+        r"""Compares two palettes for equality (whether they contain the same colors)"""
+        return _pyflamegpu.Palette___eq__(self, other)
+
+    def getColorBlindFriendly(self):
+        r"""Returns whether the palette is confirmed as suitable for colorblind viewers"""
+        return _pyflamegpu.Palette_getColorBlindFriendly(self)
+
+    def getCategory(self):
+        r"""
+        Returns the category of the palette
+        See also: Category
+        """
+        return _pyflamegpu.Palette_getCategory(self)
+
+    def __iter__(self):
+        return FLAMEGPUIterator(self)
+    def __len__(self):
+        return self.size()
+
+
+    def __getitem__(self, index):
+        return _pyflamegpu.Palette___getitem__(self, index)
+
+# Register Palette in _pyflamegpu:
+_pyflamegpu.Palette_swigregister(Palette)
+BLACK = cvar.BLACK
+WHITE = cvar.WHITE
+RED = cvar.RED
+GREEN = cvar.GREEN
+BLUE = cvar.BLUE
+
+class Set1(Palette):
+    r"""
+    Qualitative palette
+    Set1 from Colorbrewer
+    """
+
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
+    __repr__ = _swig_repr
+
+    def getCategory(self):
+        return _pyflamegpu.Set1_getCategory(self)
+
+    def getColorBlindFriendly(self):
+        return _pyflamegpu.Set1_getColorBlindFriendly(self)
+    RED = _pyflamegpu.Set1_RED
+    BLUE = _pyflamegpu.Set1_BLUE
+    GREEN = _pyflamegpu.Set1_GREEN
+    PURPLE = _pyflamegpu.Set1_PURPLE
+    ORANGE = _pyflamegpu.Set1_ORANGE
+    YELLOW = _pyflamegpu.Set1_YELLOW
+    BROWN = _pyflamegpu.Set1_BROWN
+    PINK = _pyflamegpu.Set1_PINK
+    GREY = _pyflamegpu.Set1_GREY
+
+    def __init__(self):
+        _pyflamegpu.Set1_swiginit(self, _pyflamegpu.new_Set1())
+    __swig_destroy__ = _pyflamegpu.delete_Set1
+
+# Register Set1 in _pyflamegpu:
+_pyflamegpu.Set1_swigregister(Set1)
+
+class Set2(Palette):
+    r"""
+    Color blind friendly qualitative palette
+    Set2 from Colorbrewer
+    Notes: Color names are approximations using https://www.color-blindness.com/color-name-hue/
+    """
+
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
+    __repr__ = _swig_repr
+
+    def getCategory(self):
+        return _pyflamegpu.Set2_getCategory(self)
+
+    def getColorBlindFriendly(self):
+        return _pyflamegpu.Set2_getColorBlindFriendly(self)
+    PUERTO_RICO = _pyflamegpu.Set2_PUERTO_RICO
+    ATOMIC_TANGERINE = _pyflamegpu.Set2_ATOMIC_TANGERINE
+    POLO_BLUE = _pyflamegpu.Set2_POLO_BLUE
+    SHOCKING = _pyflamegpu.Set2_SHOCKING
+    CONIFER = _pyflamegpu.Set2_CONIFER
+    SUNGLOW = _pyflamegpu.Set2_SUNGLOW
+    CHAMOIS = _pyflamegpu.Set2_CHAMOIS
+    DARK_GREY = _pyflamegpu.Set2_DARK_GREY
+
+    def __init__(self):
+        _pyflamegpu.Set2_swiginit(self, _pyflamegpu.new_Set2())
+    __swig_destroy__ = _pyflamegpu.delete_Set2
+
+# Register Set2 in _pyflamegpu:
+_pyflamegpu.Set2_swigregister(Set2)
+
+class Dark2(Palette):
+    r"""
+    Color blind friendly qualitative palette
+    Dark2 from Colorbrewer
+    Notes: Color names are approximations using https://www.color-blindness.com/color-name-hue/
+    """
+
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
+    __repr__ = _swig_repr
+
+    def getCategory(self):
+        return _pyflamegpu.Dark2_getCategory(self)
+
+    def getColorBlindFriendly(self):
+        return _pyflamegpu.Dark2_getColorBlindFriendly(self)
+    ELF_GREEN = _pyflamegpu.Dark2_ELF_GREEN
+    TAWNY = _pyflamegpu.Dark2_TAWNY
+    RICH_BLUE = _pyflamegpu.Dark2_RICH_BLUE
+    RAZZMATAZZ = _pyflamegpu.Dark2_RAZZMATAZZ
+    CHRISTI = _pyflamegpu.Dark2_CHRISTI
+    GAMBOGE = _pyflamegpu.Dark2_GAMBOGE
+    GOLDEN_BROWN = _pyflamegpu.Dark2_GOLDEN_BROWN
+    MORTAR = _pyflamegpu.Dark2_MORTAR
+
+    def __init__(self):
+        _pyflamegpu.Dark2_swiginit(self, _pyflamegpu.new_Dark2())
+    __swig_destroy__ = _pyflamegpu.delete_Dark2
+
+# Register Dark2 in _pyflamegpu:
+_pyflamegpu.Dark2_swigregister(Dark2)
+
+class Pastel(Palette):
+    r"""
+    Qualitative palette
+    pastel palette from seaborn
+    Blue light filters may cause MACARONI_AND_CHEESE(1) and ROSEBUD(3) to appear similar
+    Notes: Color names are approximations using https://www.color-blindness.com/color-name-hue/
+    """
+
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
+    __repr__ = _swig_repr
+
+    def getCategory(self):
+        return _pyflamegpu.Pastel_getCategory(self)
+
+    def getColorBlindFriendly(self):
+        return _pyflamegpu.Pastel_getColorBlindFriendly(self)
+    PALE_CORNFLOWER_BLUE = _pyflamegpu.Pastel_PALE_CORNFLOWER_BLUE
+    MACARONI_AND_CHEESE = _pyflamegpu.Pastel_MACARONI_AND_CHEESE
+    GRANNY_SMITH_APPLE = _pyflamegpu.Pastel_GRANNY_SMITH_APPLE
+    ROSEBUD = _pyflamegpu.Pastel_ROSEBUD
+    MAUVE = _pyflamegpu.Pastel_MAUVE
+    PANCHO = _pyflamegpu.Pastel_PANCHO
+    LAVENDER_ROSE = _pyflamegpu.Pastel_LAVENDER_ROSE
+    VERY_LIGHT_GREY = _pyflamegpu.Pastel_VERY_LIGHT_GREY
+    CANARY = _pyflamegpu.Pastel_CANARY
+    PALE_TURQUOISE = _pyflamegpu.Pastel_PALE_TURQUOISE
+
+    def __init__(self):
+        _pyflamegpu.Pastel_swiginit(self, _pyflamegpu.new_Pastel())
+    __swig_destroy__ = _pyflamegpu.delete_Pastel
+
+# Register Pastel in _pyflamegpu:
+_pyflamegpu.Pastel_swigregister(Pastel)
+
+class YlOrRd(Palette):
+    r"""
+    Color blind friendly Sequential palette
+    YlOrRd palette from Colorbrewer
+    """
+
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
+    __repr__ = _swig_repr
+
+    def getCategory(self):
+        return _pyflamegpu.YlOrRd_getCategory(self)
+
+    def getColorBlindFriendly(self):
+        return _pyflamegpu.YlOrRd_getColorBlindFriendly(self)
+
+    def __init__(self):
+        _pyflamegpu.YlOrRd_swiginit(self, _pyflamegpu.new_YlOrRd())
+    __swig_destroy__ = _pyflamegpu.delete_YlOrRd
+
+# Register YlOrRd in _pyflamegpu:
+_pyflamegpu.YlOrRd_swigregister(YlOrRd)
+
+class YlGn(Palette):
+    r"""
+    Color blind friendly Sequential palette
+    YlGn palette from Colorbrewer
+    """
+
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
+    __repr__ = _swig_repr
+
+    def getCategory(self):
+        return _pyflamegpu.YlGn_getCategory(self)
+
+    def getColorBlindFriendly(self):
+        return _pyflamegpu.YlGn_getColorBlindFriendly(self)
+
+    def __init__(self):
+        _pyflamegpu.YlGn_swiginit(self, _pyflamegpu.new_YlGn())
+    __swig_destroy__ = _pyflamegpu.delete_YlGn
+
+# Register YlGn in _pyflamegpu:
+_pyflamegpu.YlGn_swigregister(YlGn)
+
+class Greys(Palette):
+    r"""
+    Color blind friendly Sequential palette
+    Greys palette from Colorbrewer
+    """
+
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
+    __repr__ = _swig_repr
+
+    def getCategory(self):
+        return _pyflamegpu.Greys_getCategory(self)
+
+    def getColorBlindFriendly(self):
+        return _pyflamegpu.Greys_getColorBlindFriendly(self)
+
+    def __init__(self):
+        _pyflamegpu.Greys_swiginit(self, _pyflamegpu.new_Greys())
+    __swig_destroy__ = _pyflamegpu.delete_Greys
+
+# Register Greys in _pyflamegpu:
+_pyflamegpu.Greys_swigregister(Greys)
+
+class RdYlBu(Palette):
+    r"""
+    Color blind friendly Diverging palette
+    RdYlBu palette from Colorbrewer
+    """
+
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
+    __repr__ = _swig_repr
+
+    def getCategory(self):
+        return _pyflamegpu.RdYlBu_getCategory(self)
+
+    def getColorBlindFriendly(self):
+        return _pyflamegpu.RdYlBu_getColorBlindFriendly(self)
+
+    def __init__(self):
+        _pyflamegpu.RdYlBu_swiginit(self, _pyflamegpu.new_RdYlBu())
+    __swig_destroy__ = _pyflamegpu.delete_RdYlBu
+
+# Register RdYlBu in _pyflamegpu:
+_pyflamegpu.RdYlBu_swigregister(RdYlBu)
+
+class PiYG(Palette):
+    r"""
+    Color blind friendly Diverging palette
+    PiYG palette from Colorbrewer
+    """
+
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
+    __repr__ = _swig_repr
+
+    def getCategory(self):
+        return _pyflamegpu.PiYG_getCategory(self)
+
+    def getColorBlindFriendly(self):
+        return _pyflamegpu.PiYG_getColorBlindFriendly(self)
+
+    def __init__(self):
+        _pyflamegpu.PiYG_swiginit(self, _pyflamegpu.new_PiYG())
+    __swig_destroy__ = _pyflamegpu.delete_PiYG
+
+# Register PiYG in _pyflamegpu:
+_pyflamegpu.PiYG_swigregister(PiYG)
+
+class Viridis(Palette):
+    r"""
+    Color blind friendly dynamic sequential palette
+    Viridis from BIDS/MatPlotLib: https://github.com/BIDS/colormap
+    """
+
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
+    __repr__ = _swig_repr
+
+    def getCategory(self):
+        return _pyflamegpu.Viridis_getCategory(self)
+
+    def getColorBlindFriendly(self):
+        return _pyflamegpu.Viridis_getColorBlindFriendly(self)
+
+    def __init__(self, size):
+        r"""Construct the Palette by specifying how many color values are required"""
+        _pyflamegpu.Viridis_swiginit(self, _pyflamegpu.new_Viridis(size))
+    __swig_destroy__ = _pyflamegpu.delete_Viridis
+
+# Register Viridis in _pyflamegpu:
+_pyflamegpu.Viridis_swigregister(Viridis)
+
+class StaticColor(object):
+    r"""
+    Creates a color function returning a static color
+    You probably don't need to use this class directly, instances of Color are implicitly converted to a StaticColor
+    Notes: Currently ignores alpha channel of colors as Alpha support isn't properly tested
+    """
+
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
+    __repr__ = _swig_repr
+
+    def __init__(self, rgba):
+        r"""
+        Constructs a static color function generator
+        All components must be provided in the inclusive range [0.0, 1.0]
+        :type rgba: :py:class:`Color`
+        :param rgba: Color to represent
+        """
+        _pyflamegpu.StaticColor_swiginit(self, _pyflamegpu.new_StaticColor(rgba))
+
+    def getSrc(self):
+        r"""
+        Returns a function returning a constant color in the form:
+        vec4 calculateColor() {
+          return vec4(1.0, 0.0, 0.0, 1.0);
+        }
+        """
+        return _pyflamegpu.StaticColor_getSrc(self)
+    __swig_destroy__ = _pyflamegpu.delete_StaticColor
+
+# Register StaticColor in _pyflamegpu:
+_pyflamegpu.StaticColor_swigregister(StaticColor)
+SET1 = cvar.SET1
+SET2 = cvar.SET2
+DARK2 = cvar.DARK2
+PASTEL = cvar.PASTEL
+YLORRD = cvar.YLORRD
+YLGN = cvar.YLGN
+GREYS = cvar.GREYS
+RDYLBU = cvar.RDYLBU
+PIYG = cvar.PIYG
+
+class HSVInterpolation(object):
+    r"""Agent color function for mapping a floating point value to a HSV hue"""
+
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
+    __repr__ = _swig_repr
+
+    @staticmethod
+    def REDGREEN(variable_name, min_bound=0.0, max_bound=1.0):
+        r"""
+        0 = Red, 1 = Green
+        :type variable_name: string
+        :param variable_name: agent variable of type float to map to the color
+        :type min_bound: float, optional
+        :param min_bound: The value of the agent variable which should map to the Red
+        :type max_bound: float, optional
+        :param max_bound: The value of the agent variable which should map to the Green
+        """
+        return _pyflamegpu.HSVInterpolation_REDGREEN(variable_name, min_bound, max_bound)
+
+    @staticmethod
+    def GREENRED(variable_name, min_bound=0.0, max_bound=1.0):
+        r"""
+        0 = Green, 1 = Red
+        :type variable_name: string
+        :param variable_name: agent variable of type float to map to the color
+        :type min_bound: float, optional
+        :param min_bound: The value of the agent variable which should map to Green
+        :type max_bound: float, optional
+        :param max_bound: The value of the agent variable which should map to Red
+        """
+        return _pyflamegpu.HSVInterpolation_GREENRED(variable_name, min_bound, max_bound)
+
+    def __init__(self, variable_name, hMin, hMax, s=1.0, v=0.88):
+        r"""
+        Constructs a HSV interpolation function generator
+        All components must be provided in the inclusive range [0.0, 1.0]
+        :type variable_name: string
+        :param variable_name: Name of the agent variable which maps to hue, the variable type must be float
+        :type hMin: float
+        :param hMin: Hue value when the agent variable is 0.0
+        :type hMax: float
+        :param hMax: Hue value when the agent variable is 1.0
+        :type s: float, optional
+        :param s: Saturation (the inverse amount of grey)
+        :type v: float, optional
+        :param v: Value (brightness)
+        """
+        _pyflamegpu.HSVInterpolation_swiginit(self, _pyflamegpu.new_HSVInterpolation(variable_name, hMin, hMax, s, v))
+
+    def setBounds(self, min_bound, max_bound):
+        r"""
+        Set the bounds to clamp an agent variable to before using for HSV interpolation
+        :type min_bound: float
+        :param min_bound: The agent variable value that should map to the minimum hue, must be smaller than max_bound
+        :type max_bound: float
+        :param max_bound: The agent variable value that should map to the maximum hue, must be larger than min_bound
+        :rtype: :py:class:`HSVInterpolation`
+        :return: Returns itself, so that you can chain the method (otherwise constructor would have too many optional args)
+        :raises: InvalidArgument if min_bound > max_bound
+        Notes: Defaults to (0.0, 1.0)
+        """
+        return _pyflamegpu.HSVInterpolation_setBounds(self, min_bound, max_bound)
+
+    def setWrapHue(self, _wrapHue):
+        r"""
+        If set to true, hue will interpolate over the 0/360 boundary
+        If set false, hue will interpolate without wrapping (e.g. if hMax is < hMin), hMin will be assigned to the lower_bound
+        By default this is set to false
+        """
+        return _pyflamegpu.HSVInterpolation_setWrapHue(self, _wrapHue)
+
+    def getSrc(self):
+        r"""Returns GLSL for a function that returns a color based on the configured HSV interpolation"""
+        return _pyflamegpu.HSVInterpolation_getSrc(self)
+
+    def getSamplerName(self):
+        r'''Always returns "color_arg"'''
+        return _pyflamegpu.HSVInterpolation_getSamplerName(self)
+
+    def getAgentVariableName(self):
+        r"""Returns variable_name"""
+        return _pyflamegpu.HSVInterpolation_getAgentVariableName(self)
+    __swig_destroy__ = _pyflamegpu.delete_HSVInterpolation
+
+# Register HSVInterpolation in _pyflamegpu:
+_pyflamegpu.HSVInterpolation_swigregister(HSVInterpolation)
+
+def HSVInterpolation_REDGREEN(variable_name, min_bound=0.0, max_bound=1.0):
+    r"""
+    0 = Red, 1 = Green
+    :type variable_name: string
+    :param variable_name: agent variable of type float to map to the color
+    :type min_bound: float, optional
+    :param min_bound: The value of the agent variable which should map to the Red
+    :type max_bound: float, optional
+    :param max_bound: The value of the agent variable which should map to the Green
+    """
+    return _pyflamegpu.HSVInterpolation_REDGREEN(variable_name, min_bound, max_bound)
+
+def HSVInterpolation_GREENRED(variable_name, min_bound=0.0, max_bound=1.0):
+    r"""
+    0 = Green, 1 = Red
+    :type variable_name: string
+    :param variable_name: agent variable of type float to map to the color
+    :type min_bound: float, optional
+    :param min_bound: The value of the agent variable which should map to Green
+    :type max_bound: float, optional
+    :param max_bound: The value of the agent variable which should map to Red
+    """
+    return _pyflamegpu.HSVInterpolation_GREENRED(variable_name, min_bound, max_bound)
+
 class Model(object):
     r"""Path to model file and optional texture within integrated resources"""
 
@@ -14486,11 +15117,315 @@ class Model(object):
 # Register Model in _pyflamegpu:
 _pyflamegpu.Model_swigregister(Model)
 
-VISUALISATION = _pyflamegpu.VISUALISATION
-SEATBELTS = _pyflamegpu.SEATBELTS
+class iDiscreteColor(object):
+    r"""
+    Used to define a discrete color selection function
+    Integer keys are mapped to static colors
+    Add key:color pairs to this class as you would a std::map *
+    This class only supports being instantiated with types int32_t, and uint32_t
+    These have been typedef as iDiscreteColor and uDiscreteColor respectively
+    The agent variable which provides the key should be of the corresponding type
+    Notes: Currently ignores alpha channel of colors as Alpha support isn't properly tested
+    """
 
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
+    __repr__ = _swig_repr
+
+    def __init__(self, *args):
+        r"""
+        *Overload 1:*
+
+        Constructs a discrete color function generator
+        :type variable_name: string
+        :param variable_name: Name of the agent variable which provides the integer key, this key must have type T within the model
+        :type fallback: :py:class:`Color`
+        :param fallback: Color that is returned when the provided integer is not found within the map
+
+        |
+
+        *Overload 2:*
+
+        Constructs a discrete color function generator from a palette, with a separate fallback color
+        :type variable_name: string
+        :param variable_name: Name of the agent variable which provides the integer key
+        :type palette: :py:class:`Palette`
+        :param palette: The colors to use
+        :type fallback: :py:class:`Color`
+        :param fallback: The color to return when they lookup doesn't have a matching int
+        :type offset: int, optional
+        :param offset: The key to map to the first palette color
+        :type stride: int, optional
+        :param stride: The value to added to every subsequent key
+        See also: DiscreteColor(const std::string&, const Palette&, T, T);
+
+        |
+
+        *Overload 3:*
+
+        Constructs a discrete color function generator from a palette, with a separate fallback color
+        :type variable_name: string
+        :param variable_name: Name of the agent variable which provides the integer key
+        :type palette: :py:class:`Palette`
+        :param palette: The colors to use
+        :type fallback: :py:class:`Color`
+        :param fallback: The color to return when they lookup doesn't have a matching int
+        :type offset: int, optional
+        :param offset: The key to map to the first palette color
+        :param stride: The value to added to every subsequent key
+        See also: DiscreteColor(const std::string&, const Palette&, T, T);
+
+        |
+
+        *Overload 4:*
+
+        Constructs a discrete color function generator from a palette, with a separate fallback color
+        :type variable_name: string
+        :param variable_name: Name of the agent variable which provides the integer key
+        :type palette: :py:class:`Palette`
+        :param palette: The colors to use
+        :type fallback: :py:class:`Color`
+        :param fallback: The color to return when they lookup doesn't have a matching int
+        :param offset: The key to map to the first palette color
+        :param stride: The value to added to every subsequent key
+        See also: DiscreteColor(const std::string&, const Palette&, T, T);
+
+        |
+
+        *Overload 5:*
+
+        Constructs a discrete color function generator from a palette, with the palette's final color used as the fallback color
+        This version maps the final color of the palette to the fallback, rather than an integer key
+        :type variable_name: string
+        :param variable_name: Name of the agent variable which provides the integer key
+        :type palette: :py:class:`Palette`
+        :param palette: The colors to use
+        :type offset: int, optional
+        :param offset: The key to map to the first palette color
+        :type stride: int, optional
+        :param stride: The value to added to every subsequent key
+        See also: DiscreteColor(const std::string&, const Palette&, const Color&, T, T);
+
+        |
+
+        *Overload 6:*
+
+        Constructs a discrete color function generator from a palette, with the palette's final color used as the fallback color
+        This version maps the final color of the palette to the fallback, rather than an integer key
+        :type variable_name: string
+        :param variable_name: Name of the agent variable which provides the integer key
+        :type palette: :py:class:`Palette`
+        :param palette: The colors to use
+        :type offset: int, optional
+        :param offset: The key to map to the first palette color
+        :param stride: The value to added to every subsequent key
+        See also: DiscreteColor(const std::string&, const Palette&, const Color&, T, T);
+
+        |
+
+        *Overload 7:*
+
+        Constructs a discrete color function generator from a palette, with the palette's final color used as the fallback color
+        This version maps the final color of the palette to the fallback, rather than an integer key
+        :type variable_name: string
+        :param variable_name: Name of the agent variable which provides the integer key
+        :type palette: :py:class:`Palette`
+        :param palette: The colors to use
+        :param offset: The key to map to the first palette color
+        :param stride: The value to added to every subsequent key
+        See also: DiscreteColor(const std::string&, const Palette&, const Color&, T, T);
+        """
+        _pyflamegpu.iDiscreteColor_swiginit(self, _pyflamegpu.new_iDiscreteColor(*args))
+
+    def getSrc(self):
+        r"""
+        Returns a function containing a switch statement through the entries of the map, e.g.
+        uniform samplerBuffer color_arg;
+        vec4 calculateColor() {
+            const int category = floatBitsToInt(texelFetch(color_arg, gl_InstanceID).x);
+            switch (category) {
+              case 12: return vec4(1, 0, 0, 1);
+              default: return vec4(0, 1, 0, 1);
+            }
+        }
+        """
+        return _pyflamegpu.iDiscreteColor_getSrc(self)
+
+    def getSamplerName(self):
+        r'''Always returns "color_arg"'''
+        return _pyflamegpu.iDiscreteColor_getSamplerName(self)
+
+    def getAgentVariableName(self):
+        r"""Returns variable_name"""
+        return _pyflamegpu.iDiscreteColor_getAgentVariableName(self)
+
+    def validate(self):
+        r"""
+        Checks whether the current components can be used as a valid RGBA colour
+        Returns false if any contained color components are outside of the range [0.0, 1.0]
+        """
+        return _pyflamegpu.iDiscreteColor_validate(self)
+    __swig_destroy__ = _pyflamegpu.delete_iDiscreteColor
+
+# Register iDiscreteColor in _pyflamegpu:
+_pyflamegpu.iDiscreteColor_swigregister(iDiscreteColor)
 SPHERE = cvar.SPHERE
 ICOSPHERE = cvar.ICOSPHERE
 CUBE = cvar.CUBE
 TEAPOT = cvar.TEAPOT
+
+class uDiscreteColor(object):
+    r"""
+    Used to define a discrete color selection function
+    Integer keys are mapped to static colors
+    Add key:color pairs to this class as you would a std::map *
+    This class only supports being instantiated with types int32_t, and uint32_t
+    These have been typedef as iDiscreteColor and uDiscreteColor respectively
+    The agent variable which provides the key should be of the corresponding type
+    Notes: Currently ignores alpha channel of colors as Alpha support isn't properly tested
+    """
+
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
+    __repr__ = _swig_repr
+
+    def __init__(self, *args):
+        r"""
+        *Overload 1:*
+
+        Constructs a discrete color function generator
+        :type variable_name: string
+        :param variable_name: Name of the agent variable which provides the integer key, this key must have type T within the model
+        :type fallback: :py:class:`Color`
+        :param fallback: Color that is returned when the provided integer is not found within the map
+
+        |
+
+        *Overload 2:*
+
+        Constructs a discrete color function generator from a palette, with a separate fallback color
+        :type variable_name: string
+        :param variable_name: Name of the agent variable which provides the integer key
+        :type palette: :py:class:`Palette`
+        :param palette: The colors to use
+        :type fallback: :py:class:`Color`
+        :param fallback: The color to return when they lookup doesn't have a matching int
+        :type offset: int, optional
+        :param offset: The key to map to the first palette color
+        :type stride: int, optional
+        :param stride: The value to added to every subsequent key
+        See also: DiscreteColor(const std::string&, const Palette&, T, T);
+
+        |
+
+        *Overload 3:*
+
+        Constructs a discrete color function generator from a palette, with a separate fallback color
+        :type variable_name: string
+        :param variable_name: Name of the agent variable which provides the integer key
+        :type palette: :py:class:`Palette`
+        :param palette: The colors to use
+        :type fallback: :py:class:`Color`
+        :param fallback: The color to return when they lookup doesn't have a matching int
+        :type offset: int, optional
+        :param offset: The key to map to the first palette color
+        :param stride: The value to added to every subsequent key
+        See also: DiscreteColor(const std::string&, const Palette&, T, T);
+
+        |
+
+        *Overload 4:*
+
+        Constructs a discrete color function generator from a palette, with a separate fallback color
+        :type variable_name: string
+        :param variable_name: Name of the agent variable which provides the integer key
+        :type palette: :py:class:`Palette`
+        :param palette: The colors to use
+        :type fallback: :py:class:`Color`
+        :param fallback: The color to return when they lookup doesn't have a matching int
+        :param offset: The key to map to the first palette color
+        :param stride: The value to added to every subsequent key
+        See also: DiscreteColor(const std::string&, const Palette&, T, T);
+
+        |
+
+        *Overload 5:*
+
+        Constructs a discrete color function generator from a palette, with the palette's final color used as the fallback color
+        This version maps the final color of the palette to the fallback, rather than an integer key
+        :type variable_name: string
+        :param variable_name: Name of the agent variable which provides the integer key
+        :type palette: :py:class:`Palette`
+        :param palette: The colors to use
+        :type offset: int, optional
+        :param offset: The key to map to the first palette color
+        :type stride: int, optional
+        :param stride: The value to added to every subsequent key
+        See also: DiscreteColor(const std::string&, const Palette&, const Color&, T, T);
+
+        |
+
+        *Overload 6:*
+
+        Constructs a discrete color function generator from a palette, with the palette's final color used as the fallback color
+        This version maps the final color of the palette to the fallback, rather than an integer key
+        :type variable_name: string
+        :param variable_name: Name of the agent variable which provides the integer key
+        :type palette: :py:class:`Palette`
+        :param palette: The colors to use
+        :type offset: int, optional
+        :param offset: The key to map to the first palette color
+        :param stride: The value to added to every subsequent key
+        See also: DiscreteColor(const std::string&, const Palette&, const Color&, T, T);
+
+        |
+
+        *Overload 7:*
+
+        Constructs a discrete color function generator from a palette, with the palette's final color used as the fallback color
+        This version maps the final color of the palette to the fallback, rather than an integer key
+        :type variable_name: string
+        :param variable_name: Name of the agent variable which provides the integer key
+        :type palette: :py:class:`Palette`
+        :param palette: The colors to use
+        :param offset: The key to map to the first palette color
+        :param stride: The value to added to every subsequent key
+        See also: DiscreteColor(const std::string&, const Palette&, const Color&, T, T);
+        """
+        _pyflamegpu.uDiscreteColor_swiginit(self, _pyflamegpu.new_uDiscreteColor(*args))
+
+    def getSrc(self):
+        r"""
+        Returns a function containing a switch statement through the entries of the map, e.g.
+        uniform samplerBuffer color_arg;
+        vec4 calculateColor() {
+            const int category = floatBitsToInt(texelFetch(color_arg, gl_InstanceID).x);
+            switch (category) {
+              case 12: return vec4(1, 0, 0, 1);
+              default: return vec4(0, 1, 0, 1);
+            }
+        }
+        """
+        return _pyflamegpu.uDiscreteColor_getSrc(self)
+
+    def getSamplerName(self):
+        r'''Always returns "color_arg"'''
+        return _pyflamegpu.uDiscreteColor_getSamplerName(self)
+
+    def getAgentVariableName(self):
+        r"""Returns variable_name"""
+        return _pyflamegpu.uDiscreteColor_getAgentVariableName(self)
+
+    def validate(self):
+        r"""
+        Checks whether the current components can be used as a valid RGBA colour
+        Returns false if any contained color components are outside of the range [0.0, 1.0]
+        """
+        return _pyflamegpu.uDiscreteColor_validate(self)
+    __swig_destroy__ = _pyflamegpu.delete_uDiscreteColor
+
+# Register uDiscreteColor in _pyflamegpu:
+_pyflamegpu.uDiscreteColor_swigregister(uDiscreteColor)
+
+VISUALISATION = _pyflamegpu.VISUALISATION
+SEATBELTS = _pyflamegpu.SEATBELTS
+
 

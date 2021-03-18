@@ -180,8 +180,8 @@ SET(SRC_INCLUDE
     ${FLAMEGPU_ROOT}/include/flamegpu/model/SubAgentDescription.h
     ${FLAMEGPU_ROOT}/include/flamegpu/model/SubEnvironmentDescription.h
 
-    ${FLAMEGPU_ROOT}/src/experimentation/ExperimentDescription.h
-    ${FLAMEGPU_ROOT}/src/experimentation/ExperimentData.h
+    ${FLAMEGPU_ROOT}/src/experiment/ExperimentDescription.h
+    ${FLAMEGPU_ROOT}/src/experiment/ExperimentData.h
 )
 SET(SRC_FLAMEGPU2
     ${FLAMEGPU_ROOT}/src/flamegpu/exception/FGPUException.cpp
@@ -246,8 +246,8 @@ SET(SRC_FLAMEGPU2
     ${FLAMEGPU_ROOT}/src/flamegpu/model/SubAgentDescription.cpp
     ${FLAMEGPU_ROOT}/src/flamegpu/model/SubEnvironmentDescription.cpp
 
-    ${FLAMEGPU_ROOT}/src/experimentation/ExperimentDescription.cpp
-    ${FLAMEGPU_ROOT}/src/experimentation/ExperimentData.cpp
+    ${FLAMEGPU_ROOT}/src/experiment/ExperimentDescription.cpp
+    ${FLAMEGPU_ROOT}/src/experiment/ExperimentData.cpp
 )
 if (VISUALISATION)
     SET(SRC_INCLUDE

@@ -14,24 +14,71 @@ PROJECT_DIRECTORY = BASE_DIRECTORY+"/";
 
 class Experiment(object):
 
-	def __init__(self, experiment_name):
+	def __init__(self, *args, **kwargs):
 		self.name = experiment_name;
+		self.output_location = output_location;
+		self.filename = name;
+		self.steps = steps;
+		self.model = model;
+		self.repeats = repeats;
+
+	def setOutputDirectory(self, loc):
+		self.output_location = loc;
+
+	def setOutputFile(self, name):
+		self.filename = name;
+
+	def setSimulationSteps(self, steps):
+		self.steps = steps;
+
+	def model(self, model):
+		self.model = model;
+
+	def setRepeats(self, repeats):
+		self.repeats = repeats;
 
 class InitialStateGenerator(object):
 
-	def __init__(self):
+	def __init__(self, *args, **kwargs):
 		print("");
 		
-	def addGlobalFloat(self, global_name, global_range, random_type):
+	def setGlobalFloat(self, global_name, global_range, random_type):
 		print("added float global",global_name);
 
-	def addGlobalInt(self, global_name, global_range, random_type):
+	def setGlobalInt(self, global_name, global_range, random_type):
 		print("added float global",global_name);
 		
-	def addGlobalList(self, global_name, global_range, random_type):
+	def setGlobalList(self, global_name, global_range, random_type):
 		print("added float global",global_name);
 		
-	def addGlobalString(self, global_name, global_range, random_type):
+	def setGlobalString(self, global_name, global_range, random_type):
 		print("added float global",global_name);
-		
-	def addAgent
+
+	def setGlobalRandom(self, global_name, global_range, random_type):
+		print("added random global",global_name);
+	
+class AgentPopulation(object):
+
+	def __init__(self, *args, **kwargs):
+		self.name = agent_name;
+
+	def setPopulationSize(self, pop_size):
+		print("pop size",pop_size);
+
+	def setPopulationSizeList(self, pop_sizes):
+		print(pop_sizes);
+
+	def setPopulationSize(self, min_pop, max_pop):
+		print(min_pop,max_pop);
+
+	def setVariableFloat(self, variable_name, variable_range, random_type):
+		print("added agent variable",variable_name);
+
+	def setVariableInt(self, variable_name, variable_range, random_type):
+		print("added agent variable",variable_name);
+
+	def setVariableList(self, variable_name, variable_range, random_type):
+		print("added agent variable",variable_name);
+
+	def setVariableRandomPerAgent(self, variable_name, variable_range, random_type):
+		print("added agent variable",variable_name);

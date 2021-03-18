@@ -1,8 +1,10 @@
+#Python build
+*.pyd
+
 # Model output files
 *.xml
 *.bin
-*.pyd
-
+!src/experiment/experiment_generator/PPGEvolvingExperiment.xml
 # GoogleTest directories (handled by CMake)
 googletest-build/
 googletest-download/
