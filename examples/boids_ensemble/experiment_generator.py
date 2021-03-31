@@ -1,3 +1,4 @@
+from pyflamegpu import *
 import os
 import random
 import itertools
@@ -7,12 +8,11 @@ import queue
 import datetime
 import numpy as np
 
-BASE_DIRECTORY = os.getcwd()+"/";
-PROJECT_DIRECTORY = BASE_DIRECTORY;
-OS_NAME = os.name;
-PROJECT_DIRECTORY = BASE_DIRECTORY+"/";
 
 class Experiment(object):
+	r"""This class provides an interface to a reproducible parameter search experiment for a FLAME-GPU2 model"""
+
+	#Register default internal variables for an experiment created with no arguments
 	name = 'experiment';
 	runs = 1;
 	repeats = 1;
@@ -37,30 +37,66 @@ class Experiment(object):
 			self.repeats = kwargs["repeats"];
 			self.runs = kwargs["runs"];
 
-	def setOutputDirectory(self, loc):
+	def setModelLogDirectory(self, loc):
+		r"""Allows user to specifically set the expected directory for model logs
+		:type loc: string
+		:param loc: Path to the model log directory"""
 		self.output_location = loc;
 
-	def setOutputFile(self, name):
+	def setModelLogFile(self, name):
+		r"""Allows user to specifically set the expected file name for model logs
+		:type name: string
+		:param name: Expected name of model log file"""
 		self.filename = name;
 
 	def setSimulationSteps(self, steps):
+		r"""Allows user to specifically set the number of steps to run each model simulation within the experiment for
+		:type steps: uint
+		:param steps: Simulation steps"""
 		self.steps = steps;
 
 	def setModel(self, model):
+		r"""Allows user to specifically set the FLAME-GPU2 model to be used in the experiment
+		:type model: py:class:`pyflamegpu.ModelDescription`
+		:param model: FLAME-GPU2 model"""
 		self.model = model;
 
 	def setRepeats(self, repeats):
+		r"""Allows user to specifically set the number of times to simulate each set of initial parameter values
+		:type steps: uint
+		:param steps: Repeat simulations per set of initial parameter values"""
 		self.repeats = repeats;
 
 	def setRuns(self, runs):
+		r"""Allows user to specifically set the number of steps to run each model simulation within the experiment for
+		:type steps: uint
+		:param steps: Simulation steps"""
 		self.runs = runs;
 		print(self.runs);
 
 	def initialStateGenerator(self, generator):
+		r"""Allows user to set the generator to be used in initial population creation for a simulation
+		:type model: py:class:`InitialStateGenerator`
+		:param model: Initial population and global value generator"""
 		self.generator = generator;
 
 	def begin(self):
-		print("starting experiment");
+		r"""Begin the experiment with current experiment values"""
+		print("Beginning experiment");
+		if (self.runs>1):
+			simulation = pyflamegpu.CUDAEnsemble(self.model);
+			run_plan_vector = pyflamegpu.RunPlanVec(self.model, self.runs);
+			run_plan_vector.setSteps(self.steps);
+			simulation_seed = random.randint(0,99999);
+			run_plan_vector.setRandomSimulationSeed(simulation_seed,1000);
+		else:
+			simulation = pyflamegpu.CUDASimulation(model);
+		simulation.initialise(sys.argv);
+
+		if (self.runs>1):
+			simulation.simulate(run_plan_vector);
+		else:
+			simulation.simulate();
 
 class InitialStateGenerator(object):
 	file = '0.xml';
