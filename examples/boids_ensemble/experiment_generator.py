@@ -7,6 +7,9 @@ import threading
 import queue
 import datetime
 import numpy as np
+from deap import base
+from deap import creator
+from deap import tools
 
 
 class Experiment(object):
@@ -315,3 +318,202 @@ class AgentPopulation(object):
 		variable = (variable_name, variable_range, False);
 		self.variable_list.append(variable);
 		print("added agent variable",variable_name);
+
+
+def create_individual(container):
+		global curr_pop
+		new = [0]*(len(self.parameter_limits)+1)
+		for i in range(len(self.parameter_limits)):
+			if type(parameter_limits[i][0])==type(int()):
+				new[i] = int(random.uniform(self.parameter_limits[i][0], self.parameter_limits[i][1]))
+			else:
+				new[i] = round(random.uniform(self.parameter_limits[i][0], self.parameter_limits[i][1]),6)
+		new[-1] = curr_pop
+		curr_pop += 1
+		new = np.array(new, dtype=np.float64).reshape(1,-1)
+		return container(new)
+
+def favour_offspring(parents, offspring, MU):
+	choice = (list(zip(parents, [0]*len(parents))) +
+				list(zip(offspring, [1]*len(offspring))))
+	choice.sort(key=lambda x: ((x[0].fitness.values[0]), x[1]), reverse=True)
+	return [x[0] for x in choice[:MU]], [x[0] for x in choice[:MU] if x[1]==1]
+
+def log(logbook, population, gen, evals):
+	global statistics
+	record = statistics.compile(population) if statistics else {}
+	logbook.record(generation=gen,evaluations=evals,**record)
+	return
+
+def evaluate_population(population):
+	evaluated_population = population
+	return evaluated_population
+
+#Define a function for crossover between 2 individuals (many are available in deap if individuals are in bitstring form)
+def mate(parent1, parent2):
+	global toolbox
+	child = toolbox.individual()
+	return child
+
+#Define a function for mutating an individual (many are available in deap if individuals are in bitstring form)
+def mutate(individual):
+	global toolbox
+
+	return individual,
+
+#Define a function for selecting parents (many are available in deap)
+def select_parents(individuals,k):
+	global toolbox
+	#Example selection function, randomly select 2 parents from population
+	#parents = [random.choice(individuals) for i in range(k)]
+	#return [toolbox.clone(ind) for ind in parents]
+
+
+class Search(object):
+	search_type="GA";
+	mu=16;
+	lamda=16;
+	max_generations=100;
+	max_time=100;
+	mutation_rate=0.2;
+	optimal_fitness=1.0;
+	fitness_weights=(1.0,);
+	fitness_function=None;
+	parameter_limits=None;
+	output_file="search_results.csv";
+	cwd=os.cwd()+"/";
+	logged_stats=["mean", "std", "min", "max"];
+
+	def __init__(*args, **kwargs):
+		kwargs_items = kwargs.items();
+		if "mu" in kwargs_items:
+			mu = kwargs_items["mu"];
+
+	def GA(self):
+		global curr_pop, statistics, toolbox
+		if not os.path.exists(self.cwd+"ga_temp/"):
+			os.mkdir(self.cwd+"ga_temp/")
+		working_directory = self.cwd+"ga_temp/"
+		if not os.path.exists(working_directory+"optimal_solutions_discovered.csv"):
+			open(working_directory+"optimal_solutions_discovered.csv","w").close()
+		#Create a fitness function +ve for maximisation, -ve for minimisation
+		creator.create("Fitness",base.Fitness,weights=self.fitness_weights)
+		creator.create("Individual",list,fitness=creator.Fitness)
+		toolbox = base.Toolbox()
+		toolbox.register("individual",create_individual,creator.Individual)
+		toolbox.register("population", tools.initRepeat, list, toolbox.individual)
+		#New statistics should be created for each fitness value to be tracked (and the log method and required globals altered accordingly)
+		statistics = tools.Statistics(lambda individual: individual.fitness.values[0])
+		for s in self.logged_statistics:
+			method = getattr(np,s)
+			statistics.register(s,np.method)
+		logbook = tools.Logbook()
+		logbook.header = ['generation', 'evaluations'] + (statistics.fields if statistics else [])
+		toolbox.register("select_parents", select_parents)
+		toolbox.register("mutate",mutate)
+		toolbox.register("mate",mate)
+
+		current_generation = 0
+		#Initialise a population of mu individuals
+		population = toolbox.population(n=self.mu)
+		start_time = datetime.datetime.now()
+		print("Initial population evalauation (Generation 0)")
+		#Evaluate initial population
+		initial_fitnesses = evaluate_population(population)
+		candidates_evaluated = self.mu
+		#Record results per GA in file named the same the current seed being used for the random module
+		unique_run_seed = random.randrange(sys.maxsize)
+		seed_record = working_directory+str(unique_run_seed)+".csv"
+		if not os.path.exists(seed_record):
+			population_record = open(seed_record,"w")
+		else:
+			population_record = open(working_directory+str(unique_run_seed)+"(1).csv","w")
+		population_record.write("generation,0,mu,"+str(self.mu)+",lambda,"+str(self.lamda)+"\n")
+		#Set popualtion fitness to evaluated fitness
+		for i in range(len(initial_fitnesses)):
+			population[i].fitness.values = initial_fitnesses[i][0]
+			population_record.write("\tParameters,")
+			for j in population[i][0].tolist():
+				population_record.write(str(j)+",")
+			population_record.write("Fitness,"+str(population[i].fitness.values)+"\n")
+		population_record.close()
+		#Record initial population in the logbook
+		log(logbook, population, current_generation, self.mu)
+
+		#Begin generational GA process
+		end_conditions = False
+		optimal_solutions = []
+		optimal_count = 0
+		while(current_generation<self.max_generations and (not end_conditions)):
+			current_generation += 1
+			print("\t Generation:",current_generation)
+			generational_evaluations = 0
+			curr_pop = 0
+			offspring = []
+			evaluations = []
+			#Generate offspring candidates. If crossover is being used, it is done before mutation
+			for i in range(self.lamda):
+				mate_chance = random.uniform(0,1)
+				if mate_chance<mates_rate and (not crossover):
+					child = toolbox.individual()
+				else:
+					parent1, parent2 = [toolbox.clone(x) for x in toolbox.select_parents(population, 2)]
+					child = toolbox.mate(parent1, parent2)
+				offspring += [child]
+			#Mutate new candidates
+			for off in offspring:
+				off, = toolbox.mutate(off)
+			generational_evaluations += len(offspring)
+			evaluations = evaluate_population(offspring)
+			for i in range(len(evaluations)):
+				offspring[i].fitness.values = evaluations[i][0]
+			candidates_evaluated += generational_evaluations
+			#Select the next generation, favouring the offspring in the event of equal fitness values
+			population, new_individuals = favour_offspring(population, offspring, self.mu)
+			#Print a report about the current generation
+			if generational_evaluations>0:
+				log(logbook, population, current_generation, generational_evaluations)
+			#Save to file in case of early exit
+			#log_fitness = open(working_directory+"current_ga_fitness_log.csv","w")
+			#log_fitness.write(str(logbook)+"\n")
+			#log_fitness.close()
+			if not os.path.exists(seed_record):
+				population_record = open(seed_record,"w")
+			else:
+				population_record = open(working_directory+str(unique_run_seed)+"(1).csv","w")
+			check_nonunique = []
+			for p in population:
+				population_record.write("\t")
+				for q in p[0].tolist():
+					population_record.write(str(q)+",")
+				population_record.write("fitness,"+str(p.fitness.values)+",fitnesses,"+str(p.fitnesses.values)+"\n")
+				if p.fitness.values[0]>optimal_fitness:
+					for opt in optimal_solutions:
+						check_nonunique.append(all(elem in p[0][:-1] for elem in opt[0][:-1]))
+					if not any(check_nonunique):
+						optimal_solutions.append((p,current_generation))
+			population_record.write("SimulationGA,generation,"+str(current_generation)+"\n")
+			population_record.close()
+			end_time = datetime.datetime.now()
+			time_taken = end_time-start_time
+			if time_taken>=self.max_time:
+				end_conditions=True;
+			opti = optimal_solutions[optimal_count:]
+			if len(opti)>0:
+				opt = open(working_directory+"optimal_solutions_discovered.csv","a")
+				for b in opti:
+					opt.write("SimulationGAseed,"+str(unique_run_seed)+",Solution_Parameters,"+str(b[0][0].tolist())+",Fitness,"+str(b[0].fitness.values)+",Discovered_Generation,"+str(b[1])+",Discovered_Time,"+str(end_time)+"\n")
+				opt.close()
+			optimal_count = len(optimal_solutions)
+
+		#Record GA results
+		if not os.path.exists(self.cwd+output_file):
+			results_file = open(self.cwd+output_file,"w")
+		results_file = open(self.cwd+results_file,"a")
+		results_file.write(str(logbook)+"\n")
+		results_file.close()
+		if not os.path.exists(self.cwd+"ga_times.csv"):
+			open(loc+"times.csv","w").close()
+		time = open(loc+"times.csv","a")
+		time.write("ga_seed,"+str(unique_run_seed)+",started_at,"+str(start_time)+",ended_at,"+str(end_time)+",total_time,"+str(time_taken)+"\n")
+		time.close()
