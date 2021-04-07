@@ -493,14 +493,15 @@ experiment.setSimulationSteps(10);
 experiment.setRuns(3);
 
 
-experiment.begin();
+#experiment.begin();
 
 
 print(experiment.generator.agent_list[0].name);
 
 
 
-
+search = exp.Search();
+search.GA();
 
 
 

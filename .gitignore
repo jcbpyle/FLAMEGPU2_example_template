@@ -1,10 +1,14 @@
+#Search experiment testing
+!src/experiment/experiment_generator/PPGEvolvingExperiment.xml
+examples/boids_ensemble/*.csv
+
 #Python build
 *.pyd
 
 # Model output files
 *.xml
 *.bin
-!src/experiment/experiment_generator/PPGEvolvingExperiment.xml
+
 # GoogleTest directories (handled by CMake)
 googletest-build/
 googletest-download/
