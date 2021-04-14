@@ -22,18 +22,18 @@ class Experiment(object):
 	steps = 10;
 	model = '';
 	output_location = '';
-	file_name = "output.txt"
+	file_name = 'output.txt'
 	generator = None;
 
 	def __init__(self, *args, **kwargs):
 		if len(kwargs.items())==0:
 			args_items = len(args);
 			if args_items>3:
-				self.runs = args[3];
+				self.repeats = args[3];
 			if args_items>2:
 				self.steps = args[2];
 			if args_items>1:
-				self.steps = args[2];
+				self.runs = args[2];
 			if args_items==1:
 				self.name = args[0];
 		else:
@@ -55,7 +55,7 @@ class Experiment(object):
 		r"""Allows user to specifically set the expected file name for model logs
 		:type name: string
 		:param name: Expected name of model log file"""
-		self.filename = name;
+		self.file_name = name;
 
 	def setSimulationSteps(self, steps):
 		r"""Allows user to specifically set the number of steps to run each model simulation within the experiment for
@@ -80,7 +80,6 @@ class Experiment(object):
 		:type steps: uint
 		:param steps: Simulation steps"""
 		self.runs = runs;
-		print(self.runs);
 
 	def initialStateGenerator(self, generator):
 		r"""Allows user to set the generator to be used in initial population creation for a simulation
@@ -98,13 +97,14 @@ class Experiment(object):
 			simulation_seed = random.randint(0,99999);
 			run_plan_vector.setRandomSimulationSeed(simulation_seed,1000);
 		else:
-			simulation = pyflamegpu.CUDASimulation(model);
+			simulation = pyflamegpu.CUDASimulation(self.model);
 		simulation.initialise(sys.argv);
 
 		if (self.runs>1):
 			simulation.simulate(run_plan_vector);
 		else:
 			simulation.simulate();
+		return
 
 class InitialStateGenerator(object):
 	r"""This class allows users to define the construction of a valid inital state for a FLAME-GPU2 model including global variables and agent populations
@@ -156,7 +156,7 @@ class InitialStateGenerator(object):
 		:type distribution: py:class:`random.uniform`
 		:param distribution: User may specify a function via which to generate the value. Defaults to python's random.uniform
 		"""
-		if generate_random or type(global_range)==type(tuple):
+		if generate_random or type(global_range)==type(tuple()):
 			variable = (global_name, distribution(global_range[0], global_range[1]));
 		else:
 			variable = (global_name, global_range);
@@ -247,7 +247,7 @@ class AgentPopulation(object):
 
 	#Register default internal values
 	name = 'agent';
-	default_state = 'DEFAULT1';
+	agent_state = 'DEFAULT1';
 	pop_min = 1;
 	pop_max = 1024;
 	pop_list = []
@@ -255,41 +255,95 @@ class AgentPopulation(object):
 
 	def __init__(self, *args, **kwargs):
 		if len(kwargs.items())==0:
-			self.name = args[0];
+			args_items = len(args);
+			if args_items==1:
+				self.name = args[0];
 		else:
 			self.name = kwargs["agent"];
 
 	def setDefaultState(self, state):
-		self.default_state = state;
+		r"""Allows user to set the state for initialised agents within the population
+		:type state: string
+		:param state: Name of the state for agents to be initialised in
+		"""
+		self.agent_state = state;
 		print(state);
 
 	def setPopSize(self, pop_size):
-		self.pop_min = pop_size;
-		self.pop_max = pop_size;
+		r"""Allows user to set the desired size of the population via minimum and maximum values
+		*Overload 1:*
+		:type pop_size: uint
+		:param pop_size: Set the minimum and maximum population sizes to a single value
+
+		*Overload 2:*
+		:type pop_size: tuple
+		:param pop_size: Set the minimum and maximum population sizes via tuple values provided by the user
+		"""
+		if (type(pop_size)==type(tuple())):
+			self.pop_min = pop_size[0];
+			self.pop_max = pop_size[1];
+		else:
+			self.pop_min = pop_size;
+			self.pop_max = pop_size;
 		print("pop size",pop_size);
 
-	# Population size randomly generated within range
 	def setPopSizeMin(self, min_pop):
+		r"""Allows user to set the minimum number of agents to be generated for the current population
+		:type min_pop: uint
+		:param min_pop: Set the minimum population size to the desired value
+		"""
 		self.pop_min = min_pop;
 		print(min_pop);
 
-	# Population size randomly generated within range
 	def setPopSizeMax(self, max_pop):
+		r"""Allows user to set the maximum number of agents to be generated for the current population
+		:type max_pop: uint
+		:param max_pop: Set the maximum population size to the desired value
+		"""
 		self.pop_max = max_pop;
 		print(max_pop);
 
 	def setPopSizeList(self, pop_sizes):
+		r"""Allows user to provide a list of population size values, each of which is used to generate a population of agents
+		:type pop_sizes: list
+		:param pop_sizes: Set a list of population sizes to be generated
+		"""
 		self.pop_list = pop_sizes;
 		print(pop_sizes);
 
-	def setPopSizeRandom(self, range, distribution=random.uniform):
+	def setPopSizeRandom(self, range, distribution=random.randint):
+		r"""Allows user to set the a range for the population size, from which a single value will be randomly generated
+		:type range: tuple
+		:param range: Provide the minimum and maximum allowed population sizes
+		"""
 		pop = distribution(range[0],range[1]);
 		self.pop_min = pop;
 		self.pop_max = pop;
 		print(range);
 
 	def setVariableFloat(self, variable_name, variable_range, generate_random=False, distribution=random.uniform):
-		if generate_random or type(variable_range)==type(tuple):
+		r"""Allows user to describe the initialisation of a float variable for *all* agents within the population as a constant value or tuple of minimum and maximum values from which to randomly generate a value.
+		*Overload 1:*
+		:type variable_name: string
+		:param variable_name: Name of the agent variable
+		:type variable_range: float
+		:param variable_range: Set variable value to a constant float value for all agents in the population
+		:type generate_random: boolean
+		:param generate_random: User may specify that the value should be generated randomly. Defaults to False, intended to be used when user provides a tuple of minimum and maximum range values
+		:type distribution: py:class:`random.uniform`
+		:param distribution: User may specify a function via which to generate the value. Defaults to python's random.uniform
+
+		*Overload 2:*
+		:type variable_name: string
+		:param variable_name: Name of the global variable
+		:type variable_range: tuple
+		:param variable_range: Randomly generate variable value via a tuple containing a minimum and maximum value, set this value for all agents in the population
+		:type generate_random: boolean
+		:param generate_random: User may specify that the value should be generated randomly. Defaults to False, intended to be used when user provides a tuple of minimum and maximum range values
+		:type distribution: py:class:`random.uniform`
+		:param distribution: User may specify a function via which to generate the value. Defaults to python's random.uniform
+		"""
+		if generate_random or type(variable_range)==type(tuple()):
 			variable = (variable_name, distribution(variable_range[0], variable_range[1]), True);
 		else:
 			variable = (variable_name, variable_range, True);
@@ -297,7 +351,28 @@ class AgentPopulation(object):
 		print("added agent variable",variable_name);
 
 	def setVariableInt(self, variable_name, variable_range, generate_random=False, distribution=random.randint):
-		if generate_random or type(variable_range)==type(tuple):
+		r"""Allows user to describe the initialisation of a integer variable for *all* agents within the population as a constant value or tuple of minimum and maximum values from which to randomly generate a value.
+		*Overload 1:*
+		:type variable_name: string
+		:param variable_name: Name of the agent variable
+		:type variable_range: int
+		:param variable_range: Set variable value to a constant float value for all agents in the population
+		:type generate_random: boolean
+		:param generate_random: User may specify that the value should be generated randomly. Defaults to False, intended to be used when user provides a tuple of minimum and maximum range values
+		:type distribution: py:class:`random.randint`
+		:param distribution: User may specify a function via which to generate the value. Defaults to python's random.randint
+
+		*Overload 2:*
+		:type variable_name: string
+		:param variable_name: Name of the global variable
+		:type variable_range: tuple
+		:param variable_range: Randomly generate variable value via a tuple containing a minimum and maximum value
+		:type generate_random: boolean
+		:param generate_random: User may specify that the value should be generated randomly. Defaults to False, intended to be used when user provides a tuple of minimum and maximum range values
+		:type distribution: py:class:`random.randint`
+		:param distribution: User may specify a function via which to generate the value. Defaults to python's random.randint
+		"""
+		if generate_random or type(variable_range)==type(tuple()):
 			variable = (variable_name, distribution(variable_range[0], variable_range[1]), True);
 		else:
 			variable = (variable_name, variable_range, True);
@@ -305,33 +380,62 @@ class AgentPopulation(object):
 		print("added agent variable",variable_name);
 
 	def setVariableList(self, variable_name, variable_range):
+		r"""Allows user to provide a list of values to assign to an agent variable. This will set the list of values for *all* agents in the population
+		:type variable_name: string
+		:param variable_name: Name of the agent variable
+		:type variable_range: list
+		:param variable_range: Set agent variable value to the provided list of values
+		"""
 		variable = (variable_name, variable_range, True);
 		self.variable_list.append(variable);
 		print("added agent variable",variable_name);
 
 	def setVariableString(self, variable_name, variable_range):
+		r"""Allows user to provide a string value to assign to an agent variable. This will set the value for *all* agents in the population
+		:type variable_name: string
+		:param variable_name: Name of the agent variable
+		:type variable_range: string
+		:param variable_range: Set agent variable value to the provided string
+		"""
 		variable = (variable_name, variable_range, True);
 		self.variable_list.append(variable);
 		print("added agent variable",variable_name);
 
 	def setVariableRandomPerAgent(self, variable_name, variable_range, distribution=random.uniform):
+		r"""Allows user to describe the initialisation of a float variable for *each* agent within the population via a tuple of minimum and maximum values from which to randomly generate a value
+		:type variable_name: string
+		:param variable_name: Name of the agent variable
+		:type variable_range: tuple
+		:param variable_range: Set variable value for each agent via minimum and maximum values provided
+		:type distribution: py:class:`random.uniform`
+		:param distribution: User may specify a function via which to generate the value. Defaults to python's random.uniform
+		"""
 		variable = (variable_name, variable_range, False);
 		self.variable_list.append(variable);
 		print("added agent variable",variable_name);
 
 class Search(object):
+	r"""This class provides an interface to a genetic algorithm(GA) based search experiment intended to be used for a FLAME-GPU2 model"""
+
+	#Register default internal values
 	search_type="GA";
+	#GA population values
 	mu=2;
 	lamda=1;
+	#GA end conditions
 	max_generations=5;
 	max_time=100;
+	optimal_fitness=1.0;
+	#GA generational process values
 	current_pop_size=0;
 	mutation_rate=0.2;
 	random_initialisation_chance=0.05;
-	optimal_fitness=1.0;
+	#GA fitness calculation
 	fitness_weights=(1.0,);
 	fitness_function=None;
+	#GA chromosome initialisation and limiter
 	parameter_limits=[(-1.0,1.0)];
+	#GA logging
 	output_file="search_results.csv";
 	cwd=os.getcwd()+"/";
 	logged_stats=["mean", "std", "min", "max"];
@@ -342,6 +446,11 @@ class Search(object):
 			mu = kwargs_items["mu"];
 
 	def create_individual(self, container):
+		r"""Creates a new GA individual (chromosome) with values randomly generated based on the provided limits for each parameter
+		:type container: 'deap.creator.Individual'
+		:param container: A function assigning the created individual as an individual in a DEAP genetic algorithm population
+		"""
+		print("container type:",type(container()));
 		new = [0]*(len(self.parameter_limits)+1)
 		for i in range(len(self.parameter_limits)):
 			if type(self.parameter_limits[i][0])==type(int()):
@@ -354,42 +463,77 @@ class Search(object):
 		return container(new)
 
 	def favour_offspring(self, parents, offspring, MU):
+		r"""Evaluates GA population sorted by fitness, favouring the more recently created individuals if fitnesses are equivalent
+		:type parents: list
+		:param parents: The current GA population
+		:type offspring: list
+		:param offspring: The newly created individuals this generation
+		"""
 		choice = (list(zip(parents, [0]*len(parents))) +
 					list(zip(offspring, [1]*len(offspring))))
 		choice.sort(key=lambda x: ((x[0].fitness.values[0]), x[1]), reverse=True)
-		return [x[0] for x in choice[:MU]], [x[0] for x in choice[:MU] if x[1]==1]
+		return [x[0] for x in choice[:self.mu]], [x[0] for x in choice[:self.mu] if x[1]==1]
 
 	def log(self, logbook, population, gen, evals):
+		r"""Logs GA values including generation, average population fitness, population maximum and minimum fitness values, and population fitness standard deviation
+		:type logbook: 'deap.base.Toolbox.Logbook'
+		:param logbook: The logbook recording information over the course of a GA run
+		:type population: list
+		:param population: The current GA popualtion
+		:type gen: int
+		:param gen: The current GA generation
+		:type evals: int
+		:param evals: The number of fitness evaluations performed so far
+		"""
 		global statistics
 		record = statistics.compile(population) if statistics else {}
 		logbook.record(generation=gen,evaluations=evals,**record)
 		return
 
 	def evaluate_population(self, population):
+		r"""Placeholder fitness evaluation function, should be replaced by user created function to determine fitness
+		:type population: list
+		:param population: The current GA population
+		"""
 		n = len(population)
 		evaluation = [0.0]*n
 		return evaluation
 
-	#Define a function for crossover between 2 individuals (many are available in deap if individuals are in bitstring form)
 	def mate(self, parent1, parent2):
+		r"""A function for crossover between 2 GA individuals (many are available in deap if individuals are in bitstring form)
+		:type parent1: list
+		:param parent1: The first individual selected for crossover
+		:type parent2: list
+		:param parent2: The second individual selected for crossover
+		"""
 		global toolbox
 		child = toolbox.individual()
 		return child
 
-	#Define a function for mutating an individual (many are available in deap if individuals are in bitstring form)
 	def mutate(self, individual):
+		r"""A function for mutating an individual (many are available in deap if individuals are in bitstring form)
+		:type individual: list
+		:param individual: The first individual selected for mutation
+		"""
 		global toolbox
 
 		return individual,
 
-	#Define a function for selecting parents (many are available in deap)
-	def select_parents(self, individuals,k):
+	def select_parents(self, population, function=None):
+		r"""Define a function for selecting parents (many are available in deap). Defaults to random selection if no choice is provided
+		:type function: list
+		:param function: User provided deap function for parent selection
+		:type population: list
+		:param population: The current GA population
+		"""
 		global toolbox
-		#Example selection function, randomly select 2 parents from population
-		parents = [random.choice(individuals) for i in range(k)]
+		if function==None:
+			#Example selection function, randomly select 2 parents from population
+			parents = [random.choice(population) for i in range(2)]
 		return [toolbox.clone(ind) for ind in parents]
 
 	def GA(self):
+		r"""Genetic algorithm setup and runner based on current internal values. User should set all values and functions before the call to GA"""
 		global statistics, toolbox
 		if not os.path.exists(self.cwd+"ga_temp/"):
 			os.mkdir(self.cwd+"ga_temp/")
@@ -460,7 +604,7 @@ class Search(object):
 				if mate_chance<self.random_initialisation_chance:
 					child = toolbox.individual()
 				else:
-					parent1, parent2 = [toolbox.clone(x) for x in toolbox.select_parents(population, 2)]
+					parent1, parent2 = [toolbox.clone(x) for x in toolbox.select_parents(population)]
 					child = toolbox.mate(parent1, parent2)
 				offspring += [child]
 			#Mutate new candidates
