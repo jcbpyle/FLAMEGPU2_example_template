@@ -22,28 +22,31 @@ class Experiment(object):
 	steps = 10;
 	model = '';
 	output_location = '';
-	file_name = 'output.txt'
+	filename = 'output.txt'
 	generator = None;
 
 	def __init__(self, *args, **kwargs):
-		if len(kwargs.items())==0:
+		if len(kwargs)==0:
 			args_items = len(args);
 			if args_items>3:
 				self.repeats = args[3];
 			if args_items>2:
 				self.steps = args[2];
 			if args_items>1:
-				self.runs = args[2];
-			if args_items==1:
+				self.runs = args[1];
+			if args_items>=1:
 				self.name = args[0];
 		else:
-			self.name = kwargs["name"];
-			self.output_location = kwargs["output_location"];
-			self.filename = kwargs["filename"];
-			self.steps = kwargs["steps"];
-			self.model = kwargs["model"];
-			self.repeats = kwargs["repeats"];
-			self.runs = kwargs["runs"];
+			self.name = kwargs['name'] if ('name' in kwargs) else self.name;
+			self.output_location = kwargs['output_location'] if ('output_location' in kwargs) else self.output_location;
+			self.filename = kwargs['filename'] if ('filename' in kwargs) else self.filename;
+			self.steps = kwargs['steps'] if ('steps' in kwargs) else self.steps;
+			self.model = kwargs['model'] if ('model' in kwargs) else self.model;
+			self.repeats = kwargs['repeats'] if ('repeats' in kwargs) else self.repeats;
+			self.runs = kwargs['runs'] if ('runs' in kwargs) else self.runs;
+		print("Created experiment with name:", self.name);
+		print("experiment steps", self.steps);
+		print("experiment runs", self.runs);
 
 	def setModelLogDirectory(self, loc):
 		r"""Allows user to specifically set the expected directory for model logs
@@ -55,7 +58,7 @@ class Experiment(object):
 		r"""Allows user to specifically set the expected file name for model logs
 		:type name: string
 		:param name: Expected name of model log file"""
-		self.file_name = name;
+		self.filename = name;
 
 	def setSimulationSteps(self, steps):
 		r"""Allows user to specifically set the number of steps to run each model simulation within the experiment for
@@ -111,7 +114,7 @@ class InitialStateGenerator(object):
 	TODO: User defined logging, multiple initial state files for experiment, Exceptions of invalid tuple/list input for variables during random generation"""
 
 	#Register default internal values
-	file = '0.xml';
+	file = None;
 	global_list = [];
 	agent_list = [];
 
@@ -122,9 +125,28 @@ class InitialStateGenerator(object):
 		r"""Allows user to specifically set the initial state to an existing file via path
 		:type name: string
 		:param name: Initial state file name path"""
-		self.file = file;
+		self.file = file if type(file)==type('') else None;
+
+	def __setVariable(self, global_name, global_range, distribution=random.uniform):
+		variable_names = [var[0] for var in self.global_list];
+		if global_name in variable_names:
+			variable_update = True;
+			variable_index = variable_names.index(global_name);
+		else:
+			variable_update = False;
+		if type(global_range)==type(tuple()):
+			variable = (global_name, distribution(global_range[0], global_range[1]));
+		else:
+			variable = (global_name, global_range);
+		print(type(global_range),variable)
+		if variable_update:
+			self.global_list[variable_index] = variable;
+		else:
+			self.global_list.append(variable);
+		print("added or updated global variable",global_name);
+		print(self.global_list)
 		
-	def setGlobalFloat(self, global_name, global_range, generate_random=False, distribution=random.uniform):
+	def setGlobalFloat(self, global_name, global_range, distribution=random.uniform):
 		r"""Allows user to describe the initialisation of a global float parameter as a constant value, list of values, or tuple of minimum and maximum values from which to randomly generate a value.
 		*Overload 1:*
 		:type global_name: string
@@ -156,14 +178,9 @@ class InitialStateGenerator(object):
 		:type distribution: py:class:`random.uniform`
 		:param distribution: User may specify a function via which to generate the value. Defaults to python's random.uniform
 		"""
-		if generate_random or type(global_range)==type(tuple()):
-			variable = (global_name, distribution(global_range[0], global_range[1]));
-		else:
-			variable = (global_name, global_range);
-		self.global_list.append(variable);
-		print("added float global",global_name);
+		self.__setVariable(global_name, global_range, distribution);
 
-	def setGlobalInt(self, global_name, global_range, generate_random=False, distribution=random.randint):
+	def setGlobalInt(self, global_name, global_range, distribution=random.randint):
 		r"""Allows user to describe the initialisation of a global integer parameter as a constant value, list of values, or tuple of minimum and maximum values from which to randomly generate a value.
 		*Overload 1:*
 		:type global_name: string
@@ -195,12 +212,7 @@ class InitialStateGenerator(object):
 		:type distribution: py:class:`random.randint`
 		:param distribution: User may specify a function via which to generate the value. Defaults to python's random.randint
 		"""
-		if generate_random or type(global_range)==type(tuple):
-			variable = (global_name, distribution(global_range[0], global_range[1]));
-		else:
-			variable = (global_name, global_range);
-		self.global_list.append(variable);
-		print("added float global",global_name);
+		self.__setVariable(global_name, global_range, distribution);
 		
 	def setGlobalList(self, global_name, global_range):
 		r"""Allows user to provide a list of values to assign to a global variable. This will assign the global variable the same list in each simulation instance
@@ -209,9 +221,7 @@ class InitialStateGenerator(object):
 		:type global_range: list
 		:param global_range: Set global to the current list of values
 		"""
-		variable = (global_name, global_range);
-		self.global_list.append(variable);
-		print("added float global",global_name);
+		self.__setVariable(global_name, global_range);
 		
 	def setGlobalString(self, global_name, global_range):
 		r"""Allows user to provide a string to assign to a global variable
@@ -220,9 +230,7 @@ class InitialStateGenerator(object):
 		:type global_range: string
 		:param global_range: Set global to the provided string
 		"""
-		variable = (global_name, global_range);
-		self.global_list.append(variable);
-		print("added float global",global_name);
+		self.__setVariable(global_name, global_range);
 
 	def setGlobalRandom(self, global_name, global_range, distribution=random.uniform):
 		r"""Allows user to provide a range from which to generate a float value randomly to assign to a global variable
@@ -231,9 +239,7 @@ class InitialStateGenerator(object):
 		:type global_range: tuple
 		:param global_range: Set global randomly each simulation instance via a tuple containing a minimum and maximum value
 		"""
-		variable = (global_name, distribution(global_range[0], global_range[1]));
-		self.global_list.append(variable);
-		print("added random global",global_name);
+		self.__setVariable(global_name, global_range, distribution);
 
 	def addAgentPopulation(self, agent):
 		r"""Allows user to add a description of how to generate a specific population of agents to the initial state generator
@@ -256,10 +262,10 @@ class AgentPopulation(object):
 	def __init__(self, *args, **kwargs):
 		if len(kwargs.items())==0:
 			args_items = len(args);
-			if args_items==1:
+			if args_items>=1:
 				self.name = args[0];
 		else:
-			self.name = kwargs["agent"];
+			self.name = kwargs["agent"] if ("agent" in kwargs) else self.name;
 
 	def setDefaultState(self, state):
 		r"""Allows user to set the state for initialised agents within the population
@@ -321,7 +327,25 @@ class AgentPopulation(object):
 		self.pop_max = pop;
 		print(range);
 
-	def setVariableFloat(self, variable_name, variable_range, generate_random=False, distribution=random.uniform):
+	def __setVariable(self, variable_name, variable_range, distribution=random.uniform):
+		variable_names = [var[0] for var in self.variable_list];
+		if variable_name in variable_names:
+			variable_update = True;
+			variable_index = variable_names.index(variable_name);
+		else:
+			variable_update = False;
+		if type(variable_range)==type(tuple()):
+			variable = (variable_name, distribution(variable_range[0], variable_range[1]), True);
+		else:
+			variable = (variable_name, variable_range, True);
+		if variable_update:
+			self.variable_list[variable_index] = variable;
+		else:
+			self.variable_list.append(variable);
+		print("added or updated agent variable",variable_name);
+		print(self.variable_list)
+
+	def setVariableFloat(self, variable_name, variable_range, distribution=random.uniform):
 		r"""Allows user to describe the initialisation of a float variable for *all* agents within the population as a constant value or tuple of minimum and maximum values from which to randomly generate a value.
 		*Overload 1:*
 		:type variable_name: string
@@ -343,14 +367,9 @@ class AgentPopulation(object):
 		:type distribution: py:class:`random.uniform`
 		:param distribution: User may specify a function via which to generate the value. Defaults to python's random.uniform
 		"""
-		if generate_random or type(variable_range)==type(tuple()):
-			variable = (variable_name, distribution(variable_range[0], variable_range[1]), True);
-		else:
-			variable = (variable_name, variable_range, True);
-		self.variable_list.append(variable);
-		print("added agent variable",variable_name);
+		self.__setVariable(variable_name, variable_range, distribution);
 
-	def setVariableInt(self, variable_name, variable_range, generate_random=False, distribution=random.randint):
+	def setVariableInt(self, variable_name, variable_range, distribution=random.randint):
 		r"""Allows user to describe the initialisation of a integer variable for *all* agents within the population as a constant value or tuple of minimum and maximum values from which to randomly generate a value.
 		*Overload 1:*
 		:type variable_name: string
@@ -372,12 +391,7 @@ class AgentPopulation(object):
 		:type distribution: py:class:`random.randint`
 		:param distribution: User may specify a function via which to generate the value. Defaults to python's random.randint
 		"""
-		if generate_random or type(variable_range)==type(tuple()):
-			variable = (variable_name, distribution(variable_range[0], variable_range[1]), True);
-		else:
-			variable = (variable_name, variable_range, True);
-		self.variable_list.append(variable);
-		print("added agent variable",variable_name);
+		self.__setVariable(variable_name, variable_range, distribution);
 
 	def setVariableList(self, variable_name, variable_range):
 		r"""Allows user to provide a list of values to assign to an agent variable. This will set the list of values for *all* agents in the population
@@ -387,8 +401,14 @@ class AgentPopulation(object):
 		:param variable_range: Set agent variable value to the provided list of values
 		"""
 		variable = (variable_name, variable_range, True);
-		self.variable_list.append(variable);
+		variable_names = [var[0] for var in self.variable_list];
+		if variable_name in variable_names:
+			variable_index = variable_names.index(variable_name);
+			self.variable_list[variable_index] =variable;
+		else:
+			self.variable_list.append(variable);
 		print("added agent variable",variable_name);
+		print(self.variable_list)
 
 	def setVariableString(self, variable_name, variable_range):
 		r"""Allows user to provide a string value to assign to an agent variable. This will set the value for *all* agents in the population
@@ -398,10 +418,16 @@ class AgentPopulation(object):
 		:param variable_range: Set agent variable value to the provided string
 		"""
 		variable = (variable_name, variable_range, True);
-		self.variable_list.append(variable);
+		variable_names = [var[0] for var in self.variable_list];
+		if variable_name in variable_names:
+			variable_index = variable_names.index(variable_name);
+			self.variable_list[variable_index] =variable;
+		else:
+			self.variable_list.append(variable);
 		print("added agent variable",variable_name);
+		print(self.variable_list)
 
-	def setVariableRandomPerAgent(self, variable_name, variable_range, distribution=random.uniform):
+	def setVariableRandomPerAgent(self, variable_name, variable_range, distribution='random.uniform'):
 		r"""Allows user to describe the initialisation of a float variable for *each* agent within the population via a tuple of minimum and maximum values from which to randomly generate a value
 		:type variable_name: string
 		:param variable_name: Name of the agent variable
@@ -410,9 +436,15 @@ class AgentPopulation(object):
 		:type distribution: py:class:`random.uniform`
 		:param distribution: User may specify a function via which to generate the value. Defaults to python's random.uniform
 		"""
-		variable = (variable_name, variable_range, False);
-		self.variable_list.append(variable);
+		variable = (variable_name, variable_range, distribution, False);
+		variable_names = [var[0] for var in self.variable_list];
+		if variable_name in variable_names:
+			variable_index = variable_names.index(variable_name);
+			self.variable_list[variable_index] =variable;
+		else:
+			self.variable_list.append(variable);
 		print("added agent variable",variable_name);
+		print(self.variable_list)
 
 class Search(object):
 	r"""This class provides an interface to a genetic algorithm(GA) based search experiment intended to be used for a FLAME-GPU2 model"""

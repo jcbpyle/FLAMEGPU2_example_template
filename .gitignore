@@ -1,6 +1,6 @@
 #Search experiment testing
 !src/experiment/experiment_generator/PPGEvolvingExperiment.xml
-examples/boids_ensemble/*.csv
+examples/boids_ensemble/ga_temp/
 
 #Python build
 *.pyd
