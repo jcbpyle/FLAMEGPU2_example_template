@@ -1356,6 +1356,9 @@ class FGPURuntimeException(Exception):
 
     def type(self):
         return _pyflamegpu.FGPURuntimeException_type(self)
+
+    def __str__(self):
+        return _pyflamegpu.FGPURuntimeException___str__(self)
     __swig_destroy__ = _pyflamegpu.delete_FGPURuntimeException
 
 # Register FGPURuntimeException in _pyflamegpu:
@@ -4650,6 +4653,8 @@ class LayerDescription(object):
         :raises: InvalidAgentFunc If the agent function does not exist within the model hierarchy
         :raises: InvalidAgentFunc If the agent function has already been added to the layer
         :raises: InvalidLayerMember If the layer already contains a SubModel
+        :raises: InvalidLayerMember If the agent function outputs to a message list output to by an existing agent function of the layer
+        :raises: InvalidLayerMember If the agent function outputs an agent in the same agent state as an existing agent function's input state (or vice versa)
 
         |
 
@@ -4664,6 +4669,8 @@ class LayerDescription(object):
         :raises: InvalidAgentFunc If the agent function does not exist within the model hierarchy
         :raises: InvalidAgentFunc If the agent function has already been added to the layer
         :raises: InvalidLayerMember If the layer already contains a SubModel
+        :raises: InvalidLayerMember If the agent function outputs to a message list output to by an existing agent function of the layer
+        :raises: InvalidLayerMember If the agent function outputs an agent in the same agent state as an existing agent function's input state (or vice versa)
 
         |
 
@@ -4678,6 +4685,8 @@ class LayerDescription(object):
         :raises: InvalidAgentFunc If the agent function does not exist within the model hierarchy
         :raises: InvalidAgentFunc If the agent function has already been added to the layer
         :raises: InvalidLayerMember If the layer already contains a SubModel
+        :raises: InvalidLayerMember If the agent function outputs to a message list output to by an existing agent function of the layer
+        :raises: InvalidLayerMember If the agent function outputs an agent in the same agent state as an existing agent function's input state (or vice versa)
         Notes: This version exists because the template overload was preventing implicit cast to std::string
         """
         return _pyflamegpu.LayerDescription_addAgentFunction(self, *args)
@@ -14042,49 +14051,278 @@ class AgentVis(object):
 
     def setXVariable(self, var_name):
         r"""
-        Set the name of the variable representing the agents x location
+        Set the name of the variable representing the agents x/y/z location coordinates
         :type var_name: string
         :param var_name: Name of the agent variable
-        Notes: unnecessary if the variable is "x"
+        Notes: unnecessary if the variables are named "x", "y", "z" respectively
         """
         return _pyflamegpu.AgentVis_setXVariable(self, var_name)
 
     def setYVariable(self, var_name):
-        r"""
-        Set the name of the variable representing the agents y location
-        :type var_name: string
-        :param var_name: Name of the agent variable
-        Notes: unnecessary if the variable is "y"
-        """
         return _pyflamegpu.AgentVis_setYVariable(self, var_name)
 
     def setZVariable(self, var_name):
-        r"""
-        Set the name of the variable representing the agents z location
-        :type var_name: string
-        :param var_name: Name of the agent variable
-        Notes: unnecessary if the variable is "z", or the model is 2D
-        """
         return _pyflamegpu.AgentVis_setZVariable(self, var_name)
 
-    def clearZVariables(self):
+    def setForwardXVariable(self, var_name):
         r"""
-        Clears the agent's z variable binding
-        See also: setZVariable(const std::string &)
+        Set the name of the variable representing the agents x/y/z direction vector components
+        Single axis rotation only requires x/z components
+        Double axis rotation requires all 3 components
+        Triple axis rotation requires all 3 components and additionally all 3 Up components
+        :type var_name: string
+        :param var_name: Name of the agent variable
+        Notes: setForwardXVariable() and setForwardZVariable() are an alternate to providing a yaw angle, setting either of these will erase yaw if bound
+        See also: setYawVariable(const std::string&)
+        setForwardYVariable() is an alternate to providing a pitch angle, setting this will erase pitch if bound
+        See also: setPitchVariable(const std::string&)
+        Forward is a synonym for Direction
         """
-        return _pyflamegpu.AgentVis_clearZVariables(self)
+        return _pyflamegpu.AgentVis_setForwardXVariable(self, var_name)
+
+    def setForwardYVariable(self, var_name):
+        return _pyflamegpu.AgentVis_setForwardYVariable(self, var_name)
+
+    def setForwardZVariable(self, var_name):
+        return _pyflamegpu.AgentVis_setForwardZVariable(self, var_name)
+
+    def setUpXVariable(self, var_name):
+        r"""
+        Set the name of the variable representing the agents x/y/z UP vector
+        This should be 90 degrees perpendicular to the direction vector
+        :type var_name: string
+        :param var_name: Name of the agent variable
+        Notes: setUpXVariable(), setUpYVariable() and setUpZVariable() are an alternate to providing a roll angle, setting any of these will erase roll if bound
+        See also: setRollVariable(const std::string&)
+        """
+        return _pyflamegpu.AgentVis_setUpXVariable(self, var_name)
+
+    def setUpYVariable(self, var_name):
+        return _pyflamegpu.AgentVis_setUpYVariable(self, var_name)
+
+    def setUpZVariable(self, var_name):
+        return _pyflamegpu.AgentVis_setUpZVariable(self, var_name)
+
+    def setYawVariable(self, var_name):
+        r"""
+        Set the name of the variable representing the agents yaw rotation angle (radians)
+
+        :type var_name: string
+        :param var_name: Name of the agent variable
+        Notes: This is an alternate to providing a direction vector, setting this will erase forward x/z if bound
+        See also: setForwardXVariable(const std::string&)
+        See also: setForwardZVariable(const std::string&)
+        Heading is a synonym for Yaw
+        """
+        return _pyflamegpu.AgentVis_setYawVariable(self, var_name)
+
+    def setPitchVariable(self, var_name):
+        r"""
+        Set the name of the variable representing the agents pitch rotation angle (radians)
+
+        :type var_name: string
+        :param var_name: Name of the agent variable
+        Notes: This is an alternate to providing a direction vector, setting this will erase forward y if bound
+        See also: setForwardYVariable(const std::string&)
+        """
+        return _pyflamegpu.AgentVis_setPitchVariable(self, var_name)
+
+    def setRollVariable(self, var_name):
+        r"""
+        Set the name of the variable representing the agents yaw rotation angle (radians)
+
+        :type var_name: string
+        :param var_name: Name of the agent variable
+        Notes: This is an alternate to providing an UP vector, setting this will erase up x/y/z if bound
+        See also: setUpXVariable(const std::string&)
+        See also: setUpYVariable(const std::string&)
+        See also: setUpZVariable(const std::string&)
+        Bank is a synonym for Roll
+        """
+        return _pyflamegpu.AgentVis_setRollVariable(self, var_name)
+
+    def setUniformScaleVariable(self, var_name):
+        r"""
+        Set the name of the variable representing the agents uniform scale multiplier
+
+        The scale multiplier is multiplied by the model scale
+
+        :type var_name: string
+        :param var_name: Name of the agent variable
+        Notes: This is an alternate to providing individual scale components, setting this will erase scale x/y/z if bound
+        See also: setScaleXVariable(const std::string&)
+        See also: setScaleYVariable(const std::string&)
+        See also: setScaleZVariable(const std::string&)
+        See also: setModelScale(float)
+        See also: setModelScale(float, float, float)
+        """
+        return _pyflamegpu.AgentVis_setUniformScaleVariable(self, var_name)
+
+    def setScaleXVariable(self, var_name):
+        r"""
+        Set the name of the variable representing the agents x/y/z scale multiplier components
+        It is not necessary to set all 3 components if only 1 or 2 are required. Unset values will be treated as a 1.0 multiplier
+
+        The scale multiplier is multiplied by the model scale
+
+        :type var_name: string
+        :param var_name: Name of the agent variable
+        Notes: This is an alternate to providing a single uniform scale multiplier, setting this will erase uniform scale if bound
+        See also: setUniformScaleVariable(const std::string&)
+        See also: setModelScale(float)
+        See also: setModelScale(float, float, float)
+        """
+        return _pyflamegpu.AgentVis_setScaleXVariable(self, var_name)
+
+    def setScaleYVariable(self, var_name):
+        return _pyflamegpu.AgentVis_setScaleYVariable(self, var_name)
+
+    def setScaleZVariable(self, var_name):
+        return _pyflamegpu.AgentVis_setScaleZVariable(self, var_name)
+
+    def clearXVariable(self):
+        r"""
+        Clears the agent's x/y/z location variable bindings
+        See also: setXVariable(conCst std::string &)
+        See also: setYVariable(conCst std::string &)
+        See also: setZVariable(conCst std::string &)
+        """
+        return _pyflamegpu.AgentVis_clearXVariable(self)
+
+    def clearYVariable(self):
+        return _pyflamegpu.AgentVis_clearYVariable(self)
+
+    def clearZVariable(self):
+        return _pyflamegpu.AgentVis_clearZVariable(self)
+
+    def clearForwardXVariable(self):
+        r"""
+        Clears the agent's x/y/z forward variable bindings
+        See also: setForwardXVariable(const std::string &)
+        See also: setForwardYVariable(const std::string &)
+        See also: setForwardZVariable(const std::string &)
+        """
+        return _pyflamegpu.AgentVis_clearForwardXVariable(self)
+
+    def clearForwardYVariable(self):
+        return _pyflamegpu.AgentVis_clearForwardYVariable(self)
+
+    def clearForwardZVariable(self):
+        return _pyflamegpu.AgentVis_clearForwardZVariable(self)
+
+    def clearUpXVariable(self):
+        r"""
+        Clears the agent's x/y/z UP variable bindings
+        See also: setUpXVariable(const std::string &)
+        See also: setUpYVariable(const std::string &)
+        See also: setUpZVariable(const std::string &)
+        """
+        return _pyflamegpu.AgentVis_clearUpXVariable(self)
+
+    def clearUpYVariable(self):
+        return _pyflamegpu.AgentVis_clearUpYVariable(self)
+
+    def clearUpZVariable(self):
+        return _pyflamegpu.AgentVis_clearUpZVariable(self)
+
+    def clearYawVariable(self):
+        r"""
+        Clears the agent's yaw angle variable bindings
+        See also: setYawVariable(const std::string &)
+        """
+        return _pyflamegpu.AgentVis_clearYawVariable(self)
+
+    def clearPitchVariable(self):
+        r"""
+        Clears the agent's pitch angle variable bindings
+        See also: setPitchVariable(const std::string &)
+        """
+        return _pyflamegpu.AgentVis_clearPitchVariable(self)
+
+    def clearRollVariable(self):
+        r"""
+        Clears the agent's roll angle variable bindings
+        See also: setRollVariable(const std::string &)
+        """
+        return _pyflamegpu.AgentVis_clearRollVariable(self)
+
+    def clearUniformScaleVariable(self):
+        r"""
+        Clears the agent's uniform scale multiplier variable bindings
+        See also: setUniformScaleVariable(const std::string &)
+        """
+        return _pyflamegpu.AgentVis_clearUniformScaleVariable(self)
+
+    def clearScaleXVariable(self):
+        r"""
+        Clears the agent's x/y/z scale multiplier variable bindings
+        See also: setScaleXVariable(const std::string &)
+        See also: setScaleYVariable(const std::string &)
+        See also: setScaleZVariable(const std::string &)
+        """
+        return _pyflamegpu.AgentVis_clearScaleXVariable(self)
+
+    def clearScaleYVariable(self):
+        return _pyflamegpu.AgentVis_clearScaleYVariable(self)
+
+    def clearScaleZVariable(self):
+        return _pyflamegpu.AgentVis_clearScaleZVariable(self)
 
     def getXVariable(self):
-        r"""Returns the variable used for the agent's location's x coordinate"""
+        r"""Returns the variable used for the agent's x/y/z location coordinates"""
         return _pyflamegpu.AgentVis_getXVariable(self)
 
     def getYVariable(self):
-        r"""Returns the variable used for the agent's location's y coordinate"""
         return _pyflamegpu.AgentVis_getYVariable(self)
 
     def getZVariable(self):
-        r"""Returns the variable used for the agent's location's z coordinate"""
         return _pyflamegpu.AgentVis_getZVariable(self)
+
+    def getForwardXVariable(self):
+        r"""Returns the variable used for the agent's x/y/z forward vector components"""
+        return _pyflamegpu.AgentVis_getForwardXVariable(self)
+
+    def getForwardYVariable(self):
+        return _pyflamegpu.AgentVis_getForwardYVariable(self)
+
+    def getForwardZVariable(self):
+        return _pyflamegpu.AgentVis_getForwardZVariable(self)
+
+    def getUpXVariable(self):
+        r"""Returns the variable used for the agent's x/y/z up vector components"""
+        return _pyflamegpu.AgentVis_getUpXVariable(self)
+
+    def getUpYVariable(self):
+        return _pyflamegpu.AgentVis_getUpYVariable(self)
+
+    def getUpZVariable(self):
+        return _pyflamegpu.AgentVis_getUpZVariable(self)
+
+    def getYawVariable(self):
+        r"""Returns the variable used for the agent's yaw angle"""
+        return _pyflamegpu.AgentVis_getYawVariable(self)
+
+    def getPitchVariable(self):
+        r"""Returns the variable used for the agent's pitch angle"""
+        return _pyflamegpu.AgentVis_getPitchVariable(self)
+
+    def getRollVariable(self):
+        r"""Returns the variable used for the agent's roll angle"""
+        return _pyflamegpu.AgentVis_getRollVariable(self)
+
+    def getUniformScaleVariable(self):
+        r"""Returns the variable used for the agent's uniform scaling multiplier"""
+        return _pyflamegpu.AgentVis_getUniformScaleVariable(self)
+
+    def getScaleXVariable(self):
+        r"""Returns the variable used for the agent's x/y/z scale multiplier components"""
+        return _pyflamegpu.AgentVis_getScaleXVariable(self)
+
+    def getScaleYVariable(self):
+        return _pyflamegpu.AgentVis_getScaleYVariable(self)
+
+    def getScaleZVariable(self):
+        return _pyflamegpu.AgentVis_getScaleZVariable(self)
 
     def setModel(self, *args):
         r"""
@@ -14215,6 +14453,7 @@ class ModelVis(object):
         > On resize, also update textures
         """
         _pyflamegpu.ModelVis_swiginit(self, _pyflamegpu.new_ModelVis(model))
+    __swig_destroy__ = _pyflamegpu.delete_ModelVis
 
     def setAutoPalette(self, palette):
         r"""
@@ -14372,6 +14611,16 @@ class ModelVis(object):
         """
         return _pyflamegpu.ModelVis_setSimulationSpeed(self, stepsPerSecond)
 
+    def setBeginPaused(self, beginPaused):
+        r"""
+        Sets whether the simulation should begin in a paused state or not
+        This value defaults to false
+        The simulation can be resumed (or re-paused) by pressing 'p'
+        :type beginPaused: boolean
+        :param beginPaused: True if the simulation should begin paused
+        """
+        return _pyflamegpu.ModelVis_setBeginPaused(self, beginPaused)
+
     def addStaticModel(self, *args):
         r"""
         Adds a static model to the visualisation
@@ -14440,7 +14689,6 @@ class ModelVis(object):
         :param sc: Step count, the step count value shown in visualisation HUD
         """
         return _pyflamegpu.ModelVis_updateBuffers(self, *args)
-    __swig_destroy__ = _pyflamegpu.delete_ModelVis
 
 # Register ModelVis in _pyflamegpu:
 _pyflamegpu.ModelVis_swigregister(ModelVis)
@@ -14699,6 +14947,9 @@ class Set1(Palette):
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
     __repr__ = _swig_repr
 
+    def __init__(self):
+        _pyflamegpu.Set1_swiginit(self, _pyflamegpu.new_Set1())
+
     def getCategory(self):
         return _pyflamegpu.Set1_getCategory(self)
 
@@ -14713,9 +14964,6 @@ class Set1(Palette):
     BROWN = _pyflamegpu.Set1_BROWN
     PINK = _pyflamegpu.Set1_PINK
     GREY = _pyflamegpu.Set1_GREY
-
-    def __init__(self):
-        _pyflamegpu.Set1_swiginit(self, _pyflamegpu.new_Set1())
     __swig_destroy__ = _pyflamegpu.delete_Set1
 
 # Register Set1 in _pyflamegpu:
@@ -14731,6 +14979,9 @@ class Set2(Palette):
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
     __repr__ = _swig_repr
 
+    def __init__(self):
+        _pyflamegpu.Set2_swiginit(self, _pyflamegpu.new_Set2())
+
     def getCategory(self):
         return _pyflamegpu.Set2_getCategory(self)
 
@@ -14744,9 +14995,6 @@ class Set2(Palette):
     SUNGLOW = _pyflamegpu.Set2_SUNGLOW
     CHAMOIS = _pyflamegpu.Set2_CHAMOIS
     DARK_GREY = _pyflamegpu.Set2_DARK_GREY
-
-    def __init__(self):
-        _pyflamegpu.Set2_swiginit(self, _pyflamegpu.new_Set2())
     __swig_destroy__ = _pyflamegpu.delete_Set2
 
 # Register Set2 in _pyflamegpu:
@@ -14762,6 +15010,9 @@ class Dark2(Palette):
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
     __repr__ = _swig_repr
 
+    def __init__(self):
+        _pyflamegpu.Dark2_swiginit(self, _pyflamegpu.new_Dark2())
+
     def getCategory(self):
         return _pyflamegpu.Dark2_getCategory(self)
 
@@ -14775,9 +15026,6 @@ class Dark2(Palette):
     GAMBOGE = _pyflamegpu.Dark2_GAMBOGE
     GOLDEN_BROWN = _pyflamegpu.Dark2_GOLDEN_BROWN
     MORTAR = _pyflamegpu.Dark2_MORTAR
-
-    def __init__(self):
-        _pyflamegpu.Dark2_swiginit(self, _pyflamegpu.new_Dark2())
     __swig_destroy__ = _pyflamegpu.delete_Dark2
 
 # Register Dark2 in _pyflamegpu:
@@ -14794,6 +15042,9 @@ class Pastel(Palette):
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
     __repr__ = _swig_repr
 
+    def __init__(self):
+        _pyflamegpu.Pastel_swiginit(self, _pyflamegpu.new_Pastel())
+
     def getCategory(self):
         return _pyflamegpu.Pastel_getCategory(self)
 
@@ -14809,9 +15060,6 @@ class Pastel(Palette):
     VERY_LIGHT_GREY = _pyflamegpu.Pastel_VERY_LIGHT_GREY
     CANARY = _pyflamegpu.Pastel_CANARY
     PALE_TURQUOISE = _pyflamegpu.Pastel_PALE_TURQUOISE
-
-    def __init__(self):
-        _pyflamegpu.Pastel_swiginit(self, _pyflamegpu.new_Pastel())
     __swig_destroy__ = _pyflamegpu.delete_Pastel
 
 # Register Pastel in _pyflamegpu:
@@ -14826,14 +15074,14 @@ class YlOrRd(Palette):
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
     __repr__ = _swig_repr
 
+    def __init__(self):
+        _pyflamegpu.YlOrRd_swiginit(self, _pyflamegpu.new_YlOrRd())
+
     def getCategory(self):
         return _pyflamegpu.YlOrRd_getCategory(self)
 
     def getColorBlindFriendly(self):
         return _pyflamegpu.YlOrRd_getColorBlindFriendly(self)
-
-    def __init__(self):
-        _pyflamegpu.YlOrRd_swiginit(self, _pyflamegpu.new_YlOrRd())
     __swig_destroy__ = _pyflamegpu.delete_YlOrRd
 
 # Register YlOrRd in _pyflamegpu:
@@ -14848,14 +15096,14 @@ class YlGn(Palette):
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
     __repr__ = _swig_repr
 
+    def __init__(self):
+        _pyflamegpu.YlGn_swiginit(self, _pyflamegpu.new_YlGn())
+
     def getCategory(self):
         return _pyflamegpu.YlGn_getCategory(self)
 
     def getColorBlindFriendly(self):
         return _pyflamegpu.YlGn_getColorBlindFriendly(self)
-
-    def __init__(self):
-        _pyflamegpu.YlGn_swiginit(self, _pyflamegpu.new_YlGn())
     __swig_destroy__ = _pyflamegpu.delete_YlGn
 
 # Register YlGn in _pyflamegpu:
@@ -14870,14 +15118,14 @@ class Greys(Palette):
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
     __repr__ = _swig_repr
 
+    def __init__(self):
+        _pyflamegpu.Greys_swiginit(self, _pyflamegpu.new_Greys())
+
     def getCategory(self):
         return _pyflamegpu.Greys_getCategory(self)
 
     def getColorBlindFriendly(self):
         return _pyflamegpu.Greys_getColorBlindFriendly(self)
-
-    def __init__(self):
-        _pyflamegpu.Greys_swiginit(self, _pyflamegpu.new_Greys())
     __swig_destroy__ = _pyflamegpu.delete_Greys
 
 # Register Greys in _pyflamegpu:
@@ -14892,14 +15140,14 @@ class RdYlBu(Palette):
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
     __repr__ = _swig_repr
 
+    def __init__(self):
+        _pyflamegpu.RdYlBu_swiginit(self, _pyflamegpu.new_RdYlBu())
+
     def getCategory(self):
         return _pyflamegpu.RdYlBu_getCategory(self)
 
     def getColorBlindFriendly(self):
         return _pyflamegpu.RdYlBu_getColorBlindFriendly(self)
-
-    def __init__(self):
-        _pyflamegpu.RdYlBu_swiginit(self, _pyflamegpu.new_RdYlBu())
     __swig_destroy__ = _pyflamegpu.delete_RdYlBu
 
 # Register RdYlBu in _pyflamegpu:
@@ -14914,14 +15162,14 @@ class PiYG(Palette):
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
     __repr__ = _swig_repr
 
+    def __init__(self):
+        _pyflamegpu.PiYG_swiginit(self, _pyflamegpu.new_PiYG())
+
     def getCategory(self):
         return _pyflamegpu.PiYG_getCategory(self)
 
     def getColorBlindFriendly(self):
         return _pyflamegpu.PiYG_getColorBlindFriendly(self)
-
-    def __init__(self):
-        _pyflamegpu.PiYG_swiginit(self, _pyflamegpu.new_PiYG())
     __swig_destroy__ = _pyflamegpu.delete_PiYG
 
 # Register PiYG in _pyflamegpu:
@@ -14942,9 +15190,9 @@ class Viridis(Palette):
     def getColorBlindFriendly(self):
         return _pyflamegpu.Viridis_getColorBlindFriendly(self)
 
-    def __init__(self, size):
+    def __init__(self, *args):
         r"""Construct the Palette by specifying how many color values are required"""
-        _pyflamegpu.Viridis_swiginit(self, _pyflamegpu.new_Viridis(size))
+        _pyflamegpu.Viridis_swiginit(self, _pyflamegpu.new_Viridis(*args))
     __swig_destroy__ = _pyflamegpu.delete_Viridis
 
 # Register Viridis in _pyflamegpu:
@@ -15272,6 +15520,7 @@ SPHERE = cvar.SPHERE
 ICOSPHERE = cvar.ICOSPHERE
 CUBE = cvar.CUBE
 TEAPOT = cvar.TEAPOT
+STUNTPLANE = cvar.STUNTPLANE
 
 class uDiscreteColor(object):
     r"""

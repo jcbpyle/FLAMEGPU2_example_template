@@ -1,0 +1,178 @@
+\hypertarget{classexperiment__generator_1_1_search}{}\doxysection{experiment\+\_\+generator.\+Search Class Reference}
+\label{classexperiment__generator_1_1_search}\index{experiment\_generator.Search@{experiment\_generator.Search}}
+Inheritance diagram for experiment\+\_\+generator.\+Search\+:\begin{figure}[H]
+\begin{center}
+\leavevmode
+\includegraphics[height=2.000000cm]{classexperiment__generator_1_1_search}
+\end{center}
+\end{figure}
+\doxysubsection*{Public Member Functions}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classexperiment__generator_1_1_search_a496b1669320851411493dfe8191d43b1}\label{classexperiment__generator_1_1_search_a496b1669320851411493dfe8191d43b1}} 
+def {\bfseries \+\_\+\+\_\+init\+\_\+\+\_\+} ($\ast$args, $\ast$$\ast$kwargs)
+\item 
+def \mbox{\hyperlink{classexperiment__generator_1_1_search_a8ae0ae6d4f75ce1b627f97b69ba7752e}{create\+\_\+individual}} (self, container)
+\item 
+def \mbox{\hyperlink{classexperiment__generator_1_1_search_a5c6c73b8ef18ec14d9e9504817308d36}{favour\+\_\+offspring}} (self, parents, offspring, MU)
+\item 
+def \mbox{\hyperlink{classexperiment__generator_1_1_search_a693ddea92fff3e91e6bd69c54214e8e7}{log}} (self, logbook, population, gen, evals)
+\item 
+def \mbox{\hyperlink{classexperiment__generator_1_1_search_ac916a117524997fd01844e539ab7161a}{evaluate\+\_\+population}} (self, population)
+\item 
+def \mbox{\hyperlink{classexperiment__generator_1_1_search_a13013deb24d2191e60291977fb4d35cc}{mate}} (self, parent1, parent2)
+\item 
+def \mbox{\hyperlink{classexperiment__generator_1_1_search_a797ddf957fc3a95cc953879ecc688335}{mutate}} (self, individual)
+\item 
+def \mbox{\hyperlink{classexperiment__generator_1_1_search_ab4306dd6d2c3ebdf2d4465d3b71b8ff6}{select\+\_\+parents}} (self, population, function=None)
+\item 
+def \mbox{\hyperlink{classexperiment__generator_1_1_search_ae62d5ba78adb09ff35667079235113cd}{GA}} (self)
+\end{DoxyCompactItemize}
+\doxysubsection*{Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classexperiment__generator_1_1_search_a72f7066a72b99742b6be0032e24065c1}\label{classexperiment__generator_1_1_search_a72f7066a72b99742b6be0032e24065c1}} 
+{\bfseries current\+\_\+pop\+\_\+size}
+\end{DoxyCompactItemize}
+\doxysubsection*{Static Public Attributes}
+\begin{DoxyCompactItemize}
+\item 
+\mbox{\Hypertarget{classexperiment__generator_1_1_search_a42e9e13229d6da9171e10bb8d2546f39}\label{classexperiment__generator_1_1_search_a42e9e13229d6da9171e10bb8d2546f39}} 
+string {\bfseries search\+\_\+type} = \char`\"{}GA\char`\"{};
+\item 
+\mbox{\Hypertarget{classexperiment__generator_1_1_search_a24f8a74304d5c2cf8e38d9a8593add7a}\label{classexperiment__generator_1_1_search_a24f8a74304d5c2cf8e38d9a8593add7a}} 
+int {\bfseries mu} = 2;
+\item 
+\mbox{\Hypertarget{classexperiment__generator_1_1_search_a182176896c57c7e12719f9259ed5951c}\label{classexperiment__generator_1_1_search_a182176896c57c7e12719f9259ed5951c}} 
+int {\bfseries lamda} = 1;
+\item 
+\mbox{\Hypertarget{classexperiment__generator_1_1_search_ab6ef0f1ae1f70acd6bccfa0f6e01404c}\label{classexperiment__generator_1_1_search_ab6ef0f1ae1f70acd6bccfa0f6e01404c}} 
+int {\bfseries max\+\_\+generations} = 5;
+\item 
+\mbox{\Hypertarget{classexperiment__generator_1_1_search_a4f1d91b94bff07946c54fcd4e4195d5d}\label{classexperiment__generator_1_1_search_a4f1d91b94bff07946c54fcd4e4195d5d}} 
+int {\bfseries max\+\_\+time} = 100;
+\item 
+\mbox{\Hypertarget{classexperiment__generator_1_1_search_a522ad8f8c9dd5161c1d0a837154bac04}\label{classexperiment__generator_1_1_search_a522ad8f8c9dd5161c1d0a837154bac04}} 
+float {\bfseries optimal\+\_\+fitness} = 1.\+0;
+\item 
+\mbox{\Hypertarget{classexperiment__generator_1_1_search_acb42b49009a1fba0707589cd388889a7}\label{classexperiment__generator_1_1_search_acb42b49009a1fba0707589cd388889a7}} 
+int {\bfseries current\+\_\+pop\+\_\+size} = 0;
+\item 
+\mbox{\Hypertarget{classexperiment__generator_1_1_search_a9a3dac365632ed3b3c3b4797fc8e4bd8}\label{classexperiment__generator_1_1_search_a9a3dac365632ed3b3c3b4797fc8e4bd8}} 
+float {\bfseries mutation\+\_\+rate} = 0.\+2;
+\item 
+\mbox{\Hypertarget{classexperiment__generator_1_1_search_af31d7fc4cd08d9717d3c4460ebfa10e8}\label{classexperiment__generator_1_1_search_af31d7fc4cd08d9717d3c4460ebfa10e8}} 
+float {\bfseries random\+\_\+initialisation\+\_\+chance} = 0.\+05;
+\item 
+\mbox{\Hypertarget{classexperiment__generator_1_1_search_acacb7bf6d8a8e82722836c4c6c4e8b2a}\label{classexperiment__generator_1_1_search_acacb7bf6d8a8e82722836c4c6c4e8b2a}} 
+tuple {\bfseries fitness\+\_\+weights} = (1.\+0,);
+\item 
+\mbox{\Hypertarget{classexperiment__generator_1_1_search_a8726c2f1b884e755bcb96a4fc0919be6}\label{classexperiment__generator_1_1_search_a8726c2f1b884e755bcb96a4fc0919be6}} 
+{\bfseries fitness\+\_\+function} = None;
+\item 
+\mbox{\Hypertarget{classexperiment__generator_1_1_search_aa017cd8ad2ed29ddd62f1178c082a851}\label{classexperiment__generator_1_1_search_aa017cd8ad2ed29ddd62f1178c082a851}} 
+list {\bfseries parameter\+\_\+limits} = \mbox{[}(-\/1.\+0,1.\+0)\mbox{]};
+\item 
+\mbox{\Hypertarget{classexperiment__generator_1_1_search_ae170b63681366e172a968bffa7ae4c45}\label{classexperiment__generator_1_1_search_ae170b63681366e172a968bffa7ae4c45}} 
+string {\bfseries output\+\_\+file} = \char`\"{}search\+\_\+results.\+csv\char`\"{};
+\item 
+\mbox{\Hypertarget{classexperiment__generator_1_1_search_a90de9ba9fb311a9327685cdddce7a85c}\label{classexperiment__generator_1_1_search_a90de9ba9fb311a9327685cdddce7a85c}} 
+string {\bfseries cwd} = os.\+getcwd()+\char`\"{}/\char`\"{};
+\item 
+\mbox{\Hypertarget{classexperiment__generator_1_1_search_a38242e6bf5fd6886f4c110ff0a27ff5e}\label{classexperiment__generator_1_1_search_a38242e6bf5fd6886f4c110ff0a27ff5e}} 
+list {\bfseries logged\+\_\+stats} = \mbox{[}\char`\"{}mean\char`\"{}, \char`\"{}std\char`\"{}, \char`\"{}min\char`\"{}, \char`\"{}max\char`\"{}\mbox{]};
+\end{DoxyCompactItemize}
+
+
+\doxysubsection{Detailed Description}
+\begin{DoxyVerb}This class provides an interface to a genetic algorithm(GA) based search experiment intended to be used for a FLAME-GPU2 model\end{DoxyVerb}
+ 
+
+\doxysubsection{Member Function Documentation}
+\mbox{\Hypertarget{classexperiment__generator_1_1_search_a8ae0ae6d4f75ce1b627f97b69ba7752e}\label{classexperiment__generator_1_1_search_a8ae0ae6d4f75ce1b627f97b69ba7752e}} 
+\index{experiment\_generator.Search@{experiment\_generator.Search}!create\_individual@{create\_individual}}
+\index{create\_individual@{create\_individual}!experiment\_generator.Search@{experiment\_generator.Search}}
+\doxysubsubsection{\texorpdfstring{create\_individual()}{create\_individual()}}
+{\footnotesize\ttfamily def experiment\+\_\+generator.\+Search.\+create\+\_\+individual (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{container }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Creates a new GA individual (chromosome) with values randomly generated based on the provided limits for each parameter
+        :type container: 'deap.creator.Individual'
+        :param container: A function assigning the created individual as an individual in a DEAP genetic algorithm population\end{DoxyVerb}
+ \mbox{\Hypertarget{classexperiment__generator_1_1_search_ac916a117524997fd01844e539ab7161a}\label{classexperiment__generator_1_1_search_ac916a117524997fd01844e539ab7161a}} 
+\index{experiment\_generator.Search@{experiment\_generator.Search}!evaluate\_population@{evaluate\_population}}
+\index{evaluate\_population@{evaluate\_population}!experiment\_generator.Search@{experiment\_generator.Search}}
+\doxysubsubsection{\texorpdfstring{evaluate\_population()}{evaluate\_population()}}
+{\footnotesize\ttfamily def experiment\+\_\+generator.\+Search.\+evaluate\+\_\+population (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{population }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Placeholder fitness evaluation function, should be replaced by user created function to determine fitness
+        :type population: list
+        :param population: The current GA population\end{DoxyVerb}
+ \mbox{\Hypertarget{classexperiment__generator_1_1_search_a5c6c73b8ef18ec14d9e9504817308d36}\label{classexperiment__generator_1_1_search_a5c6c73b8ef18ec14d9e9504817308d36}} 
+\index{experiment\_generator.Search@{experiment\_generator.Search}!favour\_offspring@{favour\_offspring}}
+\index{favour\_offspring@{favour\_offspring}!experiment\_generator.Search@{experiment\_generator.Search}}
+\doxysubsubsection{\texorpdfstring{favour\_offspring()}{favour\_offspring()}}
+{\footnotesize\ttfamily def experiment\+\_\+generator.\+Search.\+favour\+\_\+offspring (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{parents,  }\item[{}]{offspring,  }\item[{}]{MU }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Evaluates GA population sorted by fitness, favouring the more recently created individuals if fitnesses are equivalent
+        :type parents: list
+        :param parents: The current GA population
+        :type offspring: list
+        :param offspring: The newly created individuals this generation\end{DoxyVerb}
+ \mbox{\Hypertarget{classexperiment__generator_1_1_search_ae62d5ba78adb09ff35667079235113cd}\label{classexperiment__generator_1_1_search_ae62d5ba78adb09ff35667079235113cd}} 
+\index{experiment\_generator.Search@{experiment\_generator.Search}!GA@{GA}}
+\index{GA@{GA}!experiment\_generator.Search@{experiment\_generator.Search}}
+\doxysubsubsection{\texorpdfstring{GA()}{GA()}}
+{\footnotesize\ttfamily def experiment\+\_\+generator.\+Search.\+GA (\begin{DoxyParamCaption}\item[{}]{self }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Genetic algorithm setup and runner based on current internal values. User should set all values and functions before the call to GA\end{DoxyVerb}
+ \mbox{\Hypertarget{classexperiment__generator_1_1_search_a693ddea92fff3e91e6bd69c54214e8e7}\label{classexperiment__generator_1_1_search_a693ddea92fff3e91e6bd69c54214e8e7}} 
+\index{experiment\_generator.Search@{experiment\_generator.Search}!log@{log}}
+\index{log@{log}!experiment\_generator.Search@{experiment\_generator.Search}}
+\doxysubsubsection{\texorpdfstring{log()}{log()}}
+{\footnotesize\ttfamily def experiment\+\_\+generator.\+Search.\+log (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{logbook,  }\item[{}]{population,  }\item[{}]{gen,  }\item[{}]{evals }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Logs GA values including generation, average population fitness, population maximum and minimum fitness values, and population fitness standard deviation
+        :type logbook: 'deap.base.Toolbox.Logbook'
+        :param logbook: The logbook recording information over the course of a GA run
+        :type population: list
+        :param population: The current GA popualtion
+        :type gen: int
+        :param gen: The current GA generation
+        :type evals: int
+        :param evals: The number of fitness evaluations performed so far\end{DoxyVerb}
+ \mbox{\Hypertarget{classexperiment__generator_1_1_search_a13013deb24d2191e60291977fb4d35cc}\label{classexperiment__generator_1_1_search_a13013deb24d2191e60291977fb4d35cc}} 
+\index{experiment\_generator.Search@{experiment\_generator.Search}!mate@{mate}}
+\index{mate@{mate}!experiment\_generator.Search@{experiment\_generator.Search}}
+\doxysubsubsection{\texorpdfstring{mate()}{mate()}}
+{\footnotesize\ttfamily def experiment\+\_\+generator.\+Search.\+mate (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{parent1,  }\item[{}]{parent2 }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}A function for crossover between 2 GA individuals (many are available in deap if individuals are in bitstring form)
+        :type parent1: list
+        :param parent1: The first individual selected for crossover
+        :type parent2: list
+        :param parent2: The second individual selected for crossover\end{DoxyVerb}
+ \mbox{\Hypertarget{classexperiment__generator_1_1_search_a797ddf957fc3a95cc953879ecc688335}\label{classexperiment__generator_1_1_search_a797ddf957fc3a95cc953879ecc688335}} 
+\index{experiment\_generator.Search@{experiment\_generator.Search}!mutate@{mutate}}
+\index{mutate@{mutate}!experiment\_generator.Search@{experiment\_generator.Search}}
+\doxysubsubsection{\texorpdfstring{mutate()}{mutate()}}
+{\footnotesize\ttfamily def experiment\+\_\+generator.\+Search.\+mutate (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{individual }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}A function for mutating an individual (many are available in deap if individuals are in bitstring form)
+        :type individual: list
+        :param individual: The first individual selected for mutation\end{DoxyVerb}
+ \mbox{\Hypertarget{classexperiment__generator_1_1_search_ab4306dd6d2c3ebdf2d4465d3b71b8ff6}\label{classexperiment__generator_1_1_search_ab4306dd6d2c3ebdf2d4465d3b71b8ff6}} 
+\index{experiment\_generator.Search@{experiment\_generator.Search}!select\_parents@{select\_parents}}
+\index{select\_parents@{select\_parents}!experiment\_generator.Search@{experiment\_generator.Search}}
+\doxysubsubsection{\texorpdfstring{select\_parents()}{select\_parents()}}
+{\footnotesize\ttfamily def experiment\+\_\+generator.\+Search.\+select\+\_\+parents (\begin{DoxyParamCaption}\item[{}]{self,  }\item[{}]{population,  }\item[{}]{function = {\ttfamily None} }\end{DoxyParamCaption})}
+
+\begin{DoxyVerb}Define a function for selecting parents (many are available in deap). Defaults to random selection if no choice is provided
+        :type function: list
+        :param function: User provided deap function for parent selection
+        :type population: list
+        :param population: The current GA population\end{DoxyVerb}
+ 
+
+The documentation for this class was generated from the following file\+:\begin{DoxyCompactItemize}
+\item 
+experiment\+\_\+generator.\+py\end{DoxyCompactItemize}

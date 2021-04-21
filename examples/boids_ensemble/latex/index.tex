@@ -1,0 +1,98 @@
+\label{index_md_README}%
+\Hypertarget{index_md_README}%
+This repository acts as an example to be used as a template for creating standalone FLAMEGPU2 projects runnning parameter search ensemble experiments of python(\+SWIG) based models.
+
+\href{https://github.com/FLAMEGPU/FLAMEGPU2_dev}{\texttt{ FLAMEGPU2}} is downloaded via CMake and configured as a dependency of the project.
+
+Currently, it uses the version of FLAMEGPU2 from master, this can be changed locally by setting the CMake variable {\ttfamily FLAMEGPU2\+\_\+\+Version} to point to a different git branch or tag. You can also change it for all users, by changing {\ttfamily cmake/flamegpu2.\+cmake\+:5} which provides the default value.\hypertarget{index_autotoc_md1}{}\doxysubsection{Example Python model}\label{index_autotoc_md1}
+An ensemble of boids models can be found at {\ttfamily /examples/boids\+\_\+ensemble}. Running this script will execute a single visual simulation of the model.\hypertarget{index_autotoc_md2}{}\doxysubsection{Running model ensembles}\label{index_autotoc_md2}
+Within the script variables\+: {\ttfamily ENSEMBLE\+\_\+\+RUNS}, {\ttfamily POPULATION\+\_\+\+SIZE} and {\ttfamily STEPS} may be edited to alter\+: the number of models simulated; boid agent population size; and how many simulation steps each model in to be run for respectively.
+
+To perform an ensemble experiment a batch file {\ttfamily run\+\_\+boids\+\_\+ensemble.\+bat} has been provided. Alternatively a call to {\ttfamily boids\+\_\+ensemble.\+py} within a python environment should be made.\hypertarget{index_autotoc_md3}{}\doxysubsection{Setting up a search experiment}\label{index_autotoc_md3}
+Commented out in {\ttfamily /examples/boids\+\_\+ensemble} is an example of how to set up a simple search experiment for the boids model.
+
+The experiment generator provides an interface for setting up an experiment for a particular model, which will then automatically generate and run an ensemble of the desired model with inital parameter values as specified during the experiment setup.
+
+This requires user specification of a valid way to generate intial states for the model. Global variables and all variables for each population of agents, as well as the initial population sizes for these agents, must be specified.
+
+The classes {\ttfamily Agent\+Population()} and {\ttfamily Initial\+State\+Generator()} are intended to be used for this purpose.
+
+After designing the python(\+SWIG) model agent populations should be provided for each population of agents, including agents of the same type but initialised in a different state. For example\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{population1 = experiment\_generator.AgentPopulation();}
+\DoxyCodeLine{population1.setDefaultState('Default1');}
+\DoxyCodeLine{population1.setPopSizeRandom((256,512));}
+
+\end{DoxyCode}
+\hypertarget{index_autotoc_md4}{}\doxysubsection{Setting up a genetic algorithm}\label{index_autotoc_md4}
+\hypertarget{index_autotoc_md5}{}\doxysubsection{Dependencies}\label{index_autotoc_md5}
+The dependencies below are required for building FLAME GPU 2.
+
+Only documentation can be built without the required dependencies (however Doxygen is still required).\hypertarget{index_autotoc_md6}{}\doxysubsection{Required}\label{index_autotoc_md6}
+
+\begin{DoxyItemize}
+\item \href{https://cmake.org/}{\texttt{ CMake}} $>$= 3.\+12
+\begin{DoxyItemize}
+\item CMake 3.\+16 is known to have issues on certain platforms
+\end{DoxyItemize}
+\item \href{https://developer.nvidia.com/cuda-toolkit}{\texttt{ CUDA Toolkit}} $>$= 9.\+0
+\item \href{https://git-scm.com/}{\texttt{ git}}\+: Required by CMake for downloading dependencies
+\item {\itshape Linux\+:}
+\begin{DoxyItemize}
+\item \href{https://www.gnu.org/software/make/}{\texttt{ make}}
+\item gcc/g++ $>$= 6 (version requirements \href{https://docs.nvidia.com/cuda/cuda-installation-guide-linux/index.html\#system-requirements}{\texttt{ here}})
+\begin{DoxyItemize}
+\item gcc/g++ $>$= 7 required for the test suite
+\end{DoxyItemize}
+\end{DoxyItemize}
+\item {\itshape Windows\+:}
+\begin{DoxyItemize}
+\item Visual Studio 2015 or higher (2019 preferred)
+\end{DoxyItemize}
+\end{DoxyItemize}\hypertarget{index_autotoc_md7}{}\doxysection{Building FLAME GPU 2}\label{index_autotoc_md7}
+FLAME GPU 2 uses \href{https://cmake.org/}{\texttt{ CMake}}, as a cross-\/platform process, for configuring and generating build directives, e.\+g. {\ttfamily Makefile} or {\ttfamily .vcxproj}. This is used to build the FLAMEGPU2 library, examples, tests and documentation.
+
+Below the core commands are provided, for the full guide refer to the main \href{https://github.com/FLAMEGPU/FLAMEGPU2_dev/blob/master/README.md}{\texttt{ FLAMEGPU2 guide}}.
+
+When building it is required to enable python swig in order to run python based models.\hypertarget{index_autotoc_md8}{}\doxysubsection{Linux}\label{index_autotoc_md8}
+Under Linux, {\ttfamily cmake} can be used to generate makefiles specific to your system\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{mkdir -\/p build \&\& cd build}
+\DoxyCodeLine{cmake .. }
+\DoxyCodeLine{make -\/j8}
+
+\end{DoxyCode}
+
+
+The option {\ttfamily -\/j8} enables parallel compilation using upto 8 threads, this is recommended to improve build times.
+
+By default a {\ttfamily Makefile} for the {\ttfamily Release} build configuration will be generated.
+
+Alternatively, using {\ttfamily -\/DCMAKE\+\_\+\+BUILD\+\_\+\+TYPE=}, {\ttfamily Debug} or {\ttfamily Profile} build configurations can be generated\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{mkdir -\/p build \&\& cd build}
+\DoxyCodeLine{cmake .. -\/DCMAKE\_BUILD\_TYPE=Profile}
+\DoxyCodeLine{make -\/j8}
+
+\end{DoxyCode}
+\hypertarget{index_autotoc_md9}{}\doxysubsection{Windows}\label{index_autotoc_md9}
+{\itshape Note\+: If installing CMake on Windows ensure CMake is added to the system path, allowing {\ttfamily cmake} to be used via {\ttfamily cmd}, this option is disabled within the installer by default.}
+
+When generating Visual studio project files, using {\ttfamily cmake} (or {\ttfamily cmake-\/gui}), the platform {\bfseries{must}} be specified as {\ttfamily x64}.
+
+Using {\ttfamily cmake} this takes the form {\ttfamily -\/A x64}\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{mkdir build \&\& cd build}
+\DoxyCodeLine{cmake .. -\/A x64}
+\DoxyCodeLine{ALL\_BUILD.sln}
+
+\end{DoxyCode}
+ 
