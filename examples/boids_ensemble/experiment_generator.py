@@ -44,9 +44,6 @@ class Experiment(object):
 			self.model = kwargs['model'] if ('model' in kwargs) else self.model;
 			self.repeats = kwargs['repeats'] if ('repeats' in kwargs) else self.repeats;
 			self.runs = kwargs['runs'] if ('runs' in kwargs) else self.runs;
-		print("Created experiment with name:", self.name);
-		print("experiment steps", self.steps);
-		print("experiment runs", self.runs);
 
 	def setModelLogDirectory(self, loc):
 		r"""Allows user to specifically set the expected directory for model logs
@@ -73,15 +70,15 @@ class Experiment(object):
 		self.model = model;
 
 	def setRepeats(self, repeats):
-		r"""Allows user to specifically set the number of times to simulate each set of initial parameter values
-		:type steps: uint
-		:param steps: Repeat simulations per set of initial parameter values"""
+		r"""Allows user to specifically set the number of times to run simulations from each set of initial parameter values 
+		:type repeats: uint
+		:param repeats: Repeat simulations per set of initial parameter values"""
 		self.repeats = repeats;
 
 	def setRuns(self, runs):
-		r"""Allows user to specifically set the number of steps to run each model simulation within the experiment for
-		:type steps: uint
-		:param steps: Simulation steps"""
+		r"""Allows user to specifically set the number of times to run simulations from each set of initial parameter values 
+		:type runs: uint
+		:param runs: Repeat simulations per set of initial parameter values"""
 		self.runs = runs;
 
 	def initialStateGenerator(self, generator):
@@ -94,19 +91,24 @@ class Experiment(object):
 		r"""Begin the experiment with current experiment values"""
 		print("Beginning experiment");
 		if (self.runs>1):
+			print("Preparing experiment ensemble run plan vector");
 			simulation = pyflamegpu.CUDAEnsemble(self.model);
 			run_plan_vector = pyflamegpu.RunPlanVec(self.model, self.runs);
 			run_plan_vector.setSteps(self.steps);
 			simulation_seed = random.randint(0,99999);
 			run_plan_vector.setRandomSimulationSeed(simulation_seed,1000);
 		else:
+			print("Performing single simulation experiment");
 			simulation = pyflamegpu.CUDASimulation(self.model);
-		simulation.initialise(sys.argv);
-
+			simulation.SimulationConfig().steps = self.steps
+		#simulation.initialise(sys.argv);
+		
 		if (self.runs>1):
+			print("Beginning experiment ensemble");
 			simulation.simulate(run_plan_vector);
 		else:
 			simulation.simulate();
+		print("Completed experiment:", self.name);
 		return
 
 class InitialStateGenerator(object):
@@ -119,7 +121,11 @@ class InitialStateGenerator(object):
 	agent_list = [];
 
 	def __init__(self, *args, **kwargs):
-		print("initial states");
+		if len(kwargs)==0:
+			if len(args)>=1:
+				self.file = args[0] if type(args[0])==type('') else None;
+		else:
+			self.file = kwargs['file'] if ('file' in kwargs and type(kwargs['file'])==type('')) else self.file;
 
 	def initialStateFile(self, file):
 		r"""Allows user to specifically set the initial state to an existing file via path
@@ -138,13 +144,10 @@ class InitialStateGenerator(object):
 			variable = (global_name, distribution(global_range[0], global_range[1]));
 		else:
 			variable = (global_name, global_range);
-		print(type(global_range),variable)
 		if variable_update:
 			self.global_list[variable_index] = variable;
 		else:
 			self.global_list.append(variable);
-		print("added or updated global variable",global_name);
-		print(self.global_list)
 		
 	def setGlobalFloat(self, global_name, global_range, distribution=random.uniform):
 		r"""Allows user to describe the initialisation of a global float parameter as a constant value, list of values, or tuple of minimum and maximum values from which to randomly generate a value.
@@ -245,7 +248,6 @@ class InitialStateGenerator(object):
 		r"""Allows user to add a description of how to generate a specific population of agents to the initial state generator
 		:type agent: py:class:`AgentPopulation`
 		:param agent: Description of how to generate a valid population of a specific agent"""
-		print(agent.name);
 		self.agent_list.append(agent);
 	
 class AgentPopulation(object):
@@ -273,7 +275,6 @@ class AgentPopulation(object):
 		:param state: Name of the state for agents to be initialised in
 		"""
 		self.agent_state = state;
-		print(state);
 
 	def setPopSize(self, pop_size):
 		r"""Allows user to set the desired size of the population via minimum and maximum values
@@ -291,7 +292,6 @@ class AgentPopulation(object):
 		else:
 			self.pop_min = pop_size;
 			self.pop_max = pop_size;
-		print("pop size",pop_size);
 
 	def setPopSizeMin(self, min_pop):
 		r"""Allows user to set the minimum number of agents to be generated for the current population
@@ -299,7 +299,6 @@ class AgentPopulation(object):
 		:param min_pop: Set the minimum population size to the desired value
 		"""
 		self.pop_min = min_pop;
-		print(min_pop);
 
 	def setPopSizeMax(self, max_pop):
 		r"""Allows user to set the maximum number of agents to be generated for the current population
@@ -307,7 +306,6 @@ class AgentPopulation(object):
 		:param max_pop: Set the maximum population size to the desired value
 		"""
 		self.pop_max = max_pop;
-		print(max_pop);
 
 	def setPopSizeList(self, pop_sizes):
 		r"""Allows user to provide a list of population size values, each of which is used to generate a population of agents
@@ -315,17 +313,15 @@ class AgentPopulation(object):
 		:param pop_sizes: Set a list of population sizes to be generated
 		"""
 		self.pop_list = pop_sizes;
-		print(pop_sizes);
 
-	def setPopSizeRandom(self, range, distribution=random.randint):
+	def setPopSizeRandom(self, pop_range, distribution=random.randint):
 		r"""Allows user to set the a range for the population size, from which a single value will be randomly generated
-		:type range: tuple
-		:param range: Provide the minimum and maximum allowed population sizes
+		:type pop_range: tuple
+		:param pop_range: Provide the minimum and maximum allowed population sizes
 		"""
-		pop = distribution(range[0],range[1]);
+		pop = distribution(pop_range[0],pop_range[1]);
 		self.pop_min = pop;
 		self.pop_max = pop;
-		print(range);
 
 	def __setVariable(self, variable_name, variable_range, distribution=random.uniform):
 		variable_names = [var[0] for var in self.variable_list];
@@ -342,8 +338,6 @@ class AgentPopulation(object):
 			self.variable_list[variable_index] = variable;
 		else:
 			self.variable_list.append(variable);
-		print("added or updated agent variable",variable_name);
-		print(self.variable_list)
 
 	def setVariableFloat(self, variable_name, variable_range, distribution=random.uniform):
 		r"""Allows user to describe the initialisation of a float variable for *all* agents within the population as a constant value or tuple of minimum and maximum values from which to randomly generate a value.
@@ -407,8 +401,6 @@ class AgentPopulation(object):
 			self.variable_list[variable_index] =variable;
 		else:
 			self.variable_list.append(variable);
-		print("added agent variable",variable_name);
-		print(self.variable_list)
 
 	def setVariableString(self, variable_name, variable_range):
 		r"""Allows user to provide a string value to assign to an agent variable. This will set the value for *all* agents in the population
@@ -424,8 +416,6 @@ class AgentPopulation(object):
 			self.variable_list[variable_index] =variable;
 		else:
 			self.variable_list.append(variable);
-		print("added agent variable",variable_name);
-		print(self.variable_list)
 
 	def setVariableRandomPerAgent(self, variable_name, variable_range, distribution='random.uniform'):
 		r"""Allows user to describe the initialisation of a float variable for *each* agent within the population via a tuple of minimum and maximum values from which to randomly generate a value
@@ -443,8 +433,6 @@ class AgentPopulation(object):
 			self.variable_list[variable_index] =variable;
 		else:
 			self.variable_list.append(variable);
-		print("added agent variable",variable_name);
-		print(self.variable_list)
 
 class Search(object):
 	r"""This class provides an interface to a genetic algorithm(GA) based search experiment intended to be used for a FLAME-GPU2 model"""

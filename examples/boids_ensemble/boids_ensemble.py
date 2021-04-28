@@ -10,8 +10,8 @@ sns.set()
 ENSEMBLE = True;
 ENSEMBLE_RUNS = 2;
 POPULATION_SIZE = 64;
-STEPS = 100;
-#STEPS = 10;
+#STEPS = 100;
+STEPS = 10;
 # Change to false if pyflamegpu has not been built with visualisation support
 VISUALISATION = True;
 

@@ -177,15 +177,16 @@ class ExperimentTest(TestCase):
 	agent_fn1 = '''
 	FLAMEGPU_AGENT_FUNCTION(agent_fn1, MsgNone, MsgNone) {
 	// do nothing
-	return ALIVE
+	return ALIVE;
 	}
 	'''
 	agent_fn2 = '''
 	FLAMEGPU_AGENT_FUNCTION(agent_fn2, MsgNone, MsgNone) {
 	// do nothing
-	return ALIVE
+	return ALIVE;
 	}
 	'''
+	
 	def test_experiment_init(self):
 		ex1 = exp.Experiment();
 		assert ex1.name=='experiment'
@@ -232,7 +233,6 @@ class ExperimentTest(TestCase):
 		del ex1
 
 		ex1 = exp.Experiment(name=EXPERIMENT_NAME2, runs=EXPERIMENT_RUNS1, steps=EXPERIMENT_STEPS1, repeats=EXPERIMENT_REPEATS2);
-		print(ex1.name)
 		assert ex1.name==EXPERIMENT_NAME2
 		assert ex1.runs==EXPERIMENT_RUNS1
 		assert ex1.repeats==EXPERIMENT_REPEATS2
@@ -268,11 +268,13 @@ class ExperimentTest(TestCase):
 		ex1.setSimulationSteps(1)
 		m = pyflamegpu.ModelDescription('model1')
 		a = m.newAgent(AGENT_NAME1)
+		a.newRTCFunction("agent_fn1", self.agent_fn1);
+		m.newLayer("Layer1").addAgentFunction(AGENT_NAME1, "agent_fn1");
 		ex1.setModel(m)
-		#ex1.begin()
+		ex1.begin()
 
 		ex1.setRuns(EXPERIMENT_RUNS1)
-		#ex1.begin()
+		ex1.begin()
 		del ex1
 
 test_ap = AgentPopulationTest()

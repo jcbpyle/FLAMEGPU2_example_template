@@ -17,16 +17,61 @@ This requires user specification of a valid way to generate intial states for th
 
 The classes {\ttfamily Agent\+Population()} and {\ttfamily Initial\+State\+Generator()} are intended to be used for this purpose.
 
-After designing the python(\+SWIG) model agent populations should be provided for each population of agents, including agents of the same type but initialised in a different state. For example\+:
+After designing the python(\+SWIG) model agent populations should be provided for each population of agents, including agents of the same type but initialised in a different state. For example a population of {\ttfamily Agent1} agents randomly generated with between 256 and 512 individuals in state {\ttfamily Default1} and with a single variable {\ttfamily x} set to a random value within a range for each agent\+:
 
 
 \begin{DoxyCode}{0}
-\DoxyCodeLine{population1 = experiment\_generator.AgentPopulation();}
+\DoxyCodeLine{population1 = experiment\_generator.AgentPopulation("{}Agent1"{});}
 \DoxyCodeLine{population1.setDefaultState('Default1');}
 \DoxyCodeLine{population1.setPopSizeRandom((256,512));}
+\DoxyCodeLine{population1.setVariableRandomPerAgent("{}x"{},(-\/1.0,1.0));}
 
 \end{DoxyCode}
-\hypertarget{index_autotoc_md4}{}\doxysubsection{Setting up a genetic algorithm}\label{index_autotoc_md4}
+
+
+This describes a valid population of {\ttfamily Agent1} agents which may then be passed to an {\ttfamily Initial\+State\+Generator()} to fully describe a valid initial state configuration from which to run a simulation or experiment\+:
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{initial\_states = experiment\_generator.InitialStateGenerator();}
+\DoxyCodeLine{initial\_states.setGlobalRandom("{}Global1"{},(0,100));}
+\DoxyCodeLine{initial\_states.addAgentPopulation(population1);}
+
+\end{DoxyCode}
+
+
+An {\ttfamily Experiment} of this module wraps around FLAMEGPU2 models and when provided initial states or the means to create them automatically creates an ensemble to run over specified parameters. Users may specify for a particular model the number of simulation steps, and the number of repeated runs from a particular set of initial parameter values.
+
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{experiment1 = experiment\_generator.Experiment("{}test\_experiment"{});}
+\DoxyCodeLine{experiment1.setModel(model); \# Where 'model' is a model described in python(SWIG) which provides methods for Agent1 }
+\DoxyCodeLine{experiment1.initialStateGenerator(initial\_states);}
+\DoxyCodeLine{experiment1.setSimulationSteps(100);}
+\DoxyCodeLine{experiment1.setRuns(10);}
+\DoxyCodeLine{experiment.begin();}
+
+\end{DoxyCode}
+
+
+The above code will generate and perform an ensemble of 10 simulations, each running for 100 steps and with randomly generated values for {\ttfamily Global1} and the population of {\ttfamily Agent1} agents.\hypertarget{index_autotoc_md4}{}\doxysubsection{Setting up a genetic algorithm ($<$em$>$$<$strong$>$may need updating in future as methods are potentially separated out$<$/strong$>$$<$/em$>$)}\label{index_autotoc_md4}
+
+\begin{DoxyCode}{0}
+\DoxyCodeLine{ga = experiment\_generator.Search(search\_type="{}GA"{});}
+\DoxyCodeLine{ga.setPopulationSize(10); \#setMu(10) is equivalent}
+\DoxyCodeLine{ga.setOffspringSize(2); \#setLambda(2) is equivalent}
+\DoxyCodeLine{ga.setMaxGenerations(100);}
+\DoxyCodeLine{ga.setFitness("{}maximise"{}); \#setFitness(1.0) or setFitness((1.0,)) are equivalent}
+\DoxyCodeLine{ga.setMutationRate(0.2)}
+\DoxyCodeLine{ga.setRandomNewOffspring(0.05)}
+\DoxyCodeLine{ga.setParameterLimits([('x',-\/1.0,1.0)])}
+\DoxyCodeLine{def fit\_func(model):}
+\DoxyCodeLine{    sum = model.Agent1.sumFloat("{}x"{})}
+\DoxyCodeLine{    return sum}
+\DoxyCodeLine{ga.setFitnessFunction(fit\_func)}
+\DoxyCodeLine{ga.begin();}
+
+\end{DoxyCode}
 \hypertarget{index_autotoc_md5}{}\doxysubsection{Dependencies}\label{index_autotoc_md5}
 The dependencies below are required for building FLAME GPU 2.
 

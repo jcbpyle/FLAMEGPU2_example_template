@@ -82,13 +82,39 @@ Setting up a search experiment</h2>
 <p>The experiment generator provides an interface for setting up an experiment for a particular model, which will then automatically generate and run an ensemble of the desired model with inital parameter values as specified during the experiment setup.</p>
 <p>This requires user specification of a valid way to generate intial states for the model. Global variables and all variables for each population of agents, as well as the initial population sizes for these agents, must be specified.</p>
 <p>The classes <code>AgentPopulation()</code> and <code>InitialStateGenerator()</code> are intended to be used for this purpose.</p>
-<p>After designing the python(SWIG) model agent populations should be provided for each population of agents, including agents of the same type but initialised in a different state. For example:</p>
-<div class="fragment"><div class="line">population1 = experiment_generator.AgentPopulation();</div>
+<p>After designing the python(SWIG) model agent populations should be provided for each population of agents, including agents of the same type but initialised in a different state. For example a population of <code>Agent1</code> agents randomly generated with between 256 and 512 individuals in state <code>Default1</code> and with a single variable <code>x</code> set to a random value within a range for each agent:</p>
+<div class="fragment"><div class="line">population1 = experiment_generator.AgentPopulation(&quot;Agent1&quot;);</div>
 <div class="line">population1.setDefaultState(&#39;Default1&#39;);</div>
 <div class="line">population1.setPopSizeRandom((256,512));</div>
-</div><!-- fragment --><h2><a class="anchor" id="autotoc_md4"></a>
-Setting up a genetic algorithm</h2>
-<h2><a class="anchor" id="autotoc_md5"></a>
+<div class="line">population1.setVariableRandomPerAgent(&quot;x&quot;,(-1.0,1.0));</div>
+</div><!-- fragment --><p>This describes a valid population of <code>Agent1</code> agents which may then be passed to an <code>InitialStateGenerator()</code> to fully describe a valid initial state configuration from which to run a simulation or experiment:</p>
+<div class="fragment"><div class="line">initial_states = experiment_generator.InitialStateGenerator();</div>
+<div class="line">initial_states.setGlobalRandom(&quot;Global1&quot;,(0,100));</div>
+<div class="line">initial_states.addAgentPopulation(population1);</div>
+</div><!-- fragment --><p>An <code>Experiment</code> of this module wraps around FLAMEGPU2 models and when provided initial states or the means to create them automatically creates an ensemble to run over specified parameters. Users may specify for a particular model the number of simulation steps, and the number of repeated runs from a particular set of initial parameter values.</p>
+<div class="fragment"><div class="line">experiment1 = experiment_generator.Experiment(&quot;test_experiment&quot;);</div>
+<div class="line">experiment1.setModel(model); # Where &#39;model&#39; is a model described in python(SWIG) which provides methods for Agent1 </div>
+<div class="line">experiment1.initialStateGenerator(initial_states);</div>
+<div class="line">experiment1.setSimulationSteps(100);</div>
+<div class="line">experiment1.setRuns(10);</div>
+<div class="line">experiment.begin();</div>
+</div><!-- fragment --><p>The above code will generate and perform an ensemble of 10 simulations, each running for 100 steps and with randomly generated values for <code>Global1</code> and the population of <code>Agent1</code> agents.</p>
+<h2><a class="anchor" id="autotoc_md4"></a>
+Setting up a genetic algorithm (&lt;em&gt;&lt;strong&gt;may need updating in future as methods are potentially separated out&lt;/strong&gt;&lt;/em&gt;)</h2>
+<div class="fragment"><div class="line">ga = experiment_generator.Search(search_type=&quot;GA&quot;);</div>
+<div class="line">ga.setPopulationSize(10); #setMu(10) is equivalent</div>
+<div class="line">ga.setOffspringSize(2); #setLambda(2) is equivalent</div>
+<div class="line">ga.setMaxGenerations(100);</div>
+<div class="line">ga.setFitness(&quot;maximise&quot;); #setFitness(1.0) or setFitness((1.0,)) are equivalent</div>
+<div class="line">ga.setMutationRate(0.2)</div>
+<div class="line">ga.setRandomNewOffspring(0.05)</div>
+<div class="line">ga.setParameterLimits([(&#39;x&#39;,-1.0,1.0)])</div>
+<div class="line">def fit_func(model):</div>
+<div class="line">    sum = model.Agent1.sumFloat(&quot;x&quot;)</div>
+<div class="line">    return sum</div>
+<div class="line">ga.setFitnessFunction(fit_func)</div>
+<div class="line">ga.begin();</div>
+</div><!-- fragment --><h2><a class="anchor" id="autotoc_md5"></a>
 Dependencies</h2>
 <p>The dependencies below are required for building FLAME GPU 2.</p>
 <p>Only documentation can be built without the required dependencies (however Doxygen is still required).</p>

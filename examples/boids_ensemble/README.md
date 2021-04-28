@@ -25,15 +25,53 @@ This requires user specification of a valid way to generate intial states for th
 
 The classes `AgentPopulation()` and `InitialStateGenerator()` are intended to be used for this purpose.
 
-After designing the python(SWIG) model agent populations should be provided for each population of agents, including agents of the same type but initialised in a different state. For example:
+After designing the python(SWIG) model agent populations should be provided for each population of agents, including agents of the same type but initialised in a different state. For example a population of `Agent1` agents randomly generated with between 256 and 512 individuals in state `Default1` and with a single variable `x` set to a random value within a range for each agent:
 
 ```
-population1 = experiment_generator.AgentPopulation();
+population1 = experiment_generator.AgentPopulation("Agent1");
 population1.setDefaultState('Default1');
 population1.setPopSizeRandom((256,512));
+population1.setVariableRandomPerAgent("x",(-1.0,1.0));
 ```
 
-### Setting up a genetic algorithm
+This describes a valid population of `Agent1` agents which may then be passed to an `InitialStateGenerator()` to fully describe a valid initial state configuration from which to run a simulation or experiment:
+
+```
+initial_states = experiment_generator.InitialStateGenerator();
+initial_states.setGlobalRandom("Global1",(0,100));
+initial_states.addAgentPopulation(population1);
+```
+
+An `Experiment` of this module wraps around FLAMEGPU2 models and when provided initial states or the means to create them automatically creates an ensemble to run over specified parameters. Users may specify for a particular model the number of simulation steps, and the number of repeated runs from a particular set of initial parameter values.
+
+```
+experiment1 = experiment_generator.Experiment("test_experiment");
+experiment1.setModel(model); # Where 'model' is a model described in python(SWIG) which provides methods for Agent1 
+experiment1.initialStateGenerator(initial_states);
+experiment1.setSimulationSteps(100);
+experiment1.setRuns(10);
+experiment.begin();
+```
+
+The above code will generate and perform an ensemble of 10 simulations, each running for 100 steps and with randomly generated values for `Global1` and the population of `Agent1` agents.
+
+### Setting up a genetic algorithm (***may need updating in future as methods are potentially separated out***)
+
+```
+ga = experiment_generator.Search(search_type="GA");
+ga.setPopulationSize(10); #setMu(10) is equivalent
+ga.setOffspringSize(2); #setLambda(2) is equivalent
+ga.setMaxGenerations(100);
+ga.setFitness("maximise"); #setFitness(1.0) or setFitness((1.0,)) are equivalent
+ga.setMutationRate(0.2)
+ga.setRandomNewOffspring(0.05)
+ga.setParameterLimits([('x',-1.0,1.0)])
+def fit_func(model):
+	sum = model.Agent1.sumFloat("x")
+	return sum
+ga.setFitnessFunction(fit_func)
+ga.begin();
+```
 
 ### Dependencies
 
