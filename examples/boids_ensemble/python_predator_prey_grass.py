@@ -134,9 +134,9 @@ def boundPosition(x, y, z, MIN_POSITION, MAX_POSITION)
     agent_position.z = MIN_POSITION if (z>MAX_POSITION) else z;
 
 """
-  outputdata agent function for Boid agents, which outputs publicly visible properties to a message list
+  outputdata agent function for Prey agents, which outputs publicly visible properties to a message list
 """
-outputdata = """
+prey_outputdata = """
 FLAMEGPU_AGENT_FUNCTION(outputdata, MsgNone, MsgSpatial3D) {
     // Output each agents publicly visible properties.
     FLAMEGPU->message_out.setVariable<int>("id", FLAMEGPU->getVariable<int>("id"));
@@ -150,9 +150,9 @@ FLAMEGPU_AGENT_FUNCTION(outputdata, MsgNone, MsgSpatial3D) {
 }
 """
 """
-  inputdata agent function for Boid agents, which reads data from neighbouring Boid agents, to perform the boid flocking model.
+  inputdata agent function for Prey agents, which reads data from neighbouring agents, to perform predator avoidance, prey herding, and food seeking behaviour.
 """
-inputdata = """
+prey_inputdata = """
 // Vector utility functions, see top of file for versions with commentary
 FLAMEGPU_HOST_DEVICE_FUNCTION float vec3Length(const float x, const float y, const float z) {
     return sqrtf(x * x + y * y + z * z);
