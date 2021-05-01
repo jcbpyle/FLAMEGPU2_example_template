@@ -138,21 +138,17 @@ def boundPosition(x, y, z, MIN_POSITION, MAX_POSITION)
 """
 prey_outputdata = """
 FLAMEGPU_AGENT_FUNCTION(outputdata, MsgNone, MsgSpatial3D) {
-    // Output each agents publicly visible properties.
-    FLAMEGPU->message_out.setVariable<int>("id", FLAMEGPU->getVariable<int>("id"));
-    FLAMEGPU->message_out.setVariable<float>("x", FLAMEGPU->getVariable<float>("x"));
-    FLAMEGPU->message_out.setVariable<float>("y", FLAMEGPU->getVariable<float>("y"));
-    FLAMEGPU->message_out.setVariable<float>("z", FLAMEGPU->getVariable<float>("z"));
-    FLAMEGPU->message_out.setVariable<float>("fx", FLAMEGPU->getVariable<float>("fx"));
-    FLAMEGPU->message_out.setVariable<float>("fy", FLAMEGPU->getVariable<float>("fy"));
-    FLAMEGPU->message_out.setVariable<float>("fz", FLAMEGPU->getVariable<float>("fz"));
+    // Output each prey agent's location (and other visible properties if implemented)
+    FLAMEGPU->prey_message_out.setVariable<int>("id", FLAMEGPU->getVariable<int>("id"));
+    FLAMEGPU->prey_message_out.setVariable<float>("x", FLAMEGPU->getVariable<float>("x"));
+    FLAMEGPU->prey_message_out.setVariable<float>("y", FLAMEGPU->getVariable<float>("y"));
+    FLAMEGPU->prey_message_out.setVariable<float>("z", FLAMEGPU->getVariable<float>("z"));
     return ALIVE;
-}
-"""
+    }"""
 """
   inputdata agent function for Prey agents, which reads data from neighbouring agents, to perform predator avoidance, prey herding, and food seeking behaviour.
 """
-prey_inputdata = """
+prey_predator_location_inputdata = """
 // Vector utility functions, see top of file for versions with commentary
 FLAMEGPU_HOST_DEVICE_FUNCTION float vec3Length(const float x, const float y, const float z) {
     return sqrtf(x * x + y * y + z * z);
@@ -199,155 +195,98 @@ FLAMEGPU_AGENT_FUNCTION(inputdata, MsgSpatial3D, MsgNone) {
     // Agent position
     float agent_x = FLAMEGPU->getVariable<float>("x");
     float agent_y = FLAMEGPU->getVariable<float>("y");
-    float agent_z = FLAMEGPU->getVariable<float>("z");
-    // Agent velocity
-    float agent_fx = FLAMEGPU->getVariable<float>("fx");
-    float agent_fy = FLAMEGPU->getVariable<float>("fy");
-    float agent_fz = FLAMEGPU->getVariable<float>("fz");
+    //Alter velocity to avoid predator agents
+    float average_center_x = 0.0;
+    float average_center_y = 0.0;
+    float avoidance_x = 0.0;
+    float avoidance_y = 0.0;
+    float separation = 0.0;
+    const float message_x = 0.0;
+    const float message_y = 0.0;
 
-    // Boids percieved center
-    float perceived_centre_x = 0.0f;
-    float perceived_centre_y = 0.0f;
-    float perceived_centre_z = 0.0f;
-    int perceived_count = 0;
-
-    // Boids global velocity matching
-    float global_velocity_x = 0.0f;
-    float global_velocity_y = 0.0f;
-    float global_velocity_z = 0.0f;
-
-    // Boids short range avoidance centre
-    float collision_centre_x = 0.0f;
-    float collision_centre_y = 0.0f;
-    float collision_centre_z = 0.0f;
-    int collision_count = 0;
-
-    const float INTERACTION_RADIUS = FLAMEGPU->environment.getProperty<float>("INTERACTION_RADIUS");
-    const float SEPARATION_RADIUS = FLAMEGPU->environment.getProperty<float>("SEPARATION_RADIUS");
+    const float PRED_PREY_INTERACTION_RADIUS = FLAMEGPU->environment.getProperty<float>("PRED_PREY_INTERACTION_RADIUS");
     // Iterate location messages, accumulating relevant data and counts.
     for (const auto &message : FLAMEGPU->message_in(agent_x, agent_y, agent_z)) {
-        // Ignore self messages.
-        if (message.getVariable<int>("id") != id) {
-            // Get the message location and velocity.
-            const float message_x = message.getVariable<float>("x");
-            const float message_y = message.getVariable<float>("y");
-            const float message_z = message.getVariable<float>("z");
-            const float message_fx = message.getVariable<float>("fx");
-            const float message_fy = message.getVariable<float>("fy");
-            const float message_fz = message.getVariable<float>("fz");
+        
+        message_x = message.getVariable<float>("x");
+        message_y = message.getVariable<float>("y");
 
-            // Check interaction radius
-            float separation = vec3Length(agent_x - message_x, agent_y - message_y, agent_z - message_z);
+        // Check interaction radius
+        separation = vec3Length(agent_x - message_x, agent_y - message_y, 0.0);
 
-            if (separation < (INTERACTION_RADIUS)) {
-                // Update the percieved centre
-                perceived_centre_x += message_x;
-                perceived_centre_y += message_y;
-                perceived_centre_z += message_z;
-                perceived_count++;
+        if (separation < (PRED_PREY_INTERACTION_RADIUS) and separation>0.0) {
+            // Update the percieved centre
+            avoidance_x += PRED_PREY_INTERACTION_RADIUS / separation*(agent_x - message_x);
+            avoidance_y += PRED_PREY_INTERACTION_RADIUS / separation*(agent_y - message_y);
+        }
+    }
 
-                // Update percieved velocity matching
-                global_velocity_x += message_fx;
-                global_velocity_y += message_fy;
-                global_velocity_z += message_fz;
+    FLAMEGPU->setVariable<float>("steer_x", avoid_x);
+    FLAMEGPU->setVariable<float>("steer_y", avoid_y);
+    return ALIVE;
+}
+"""
+prey_prey_location_inputdata = """
+// Agent function
+FLAMEGPU_AGENT_FUNCTION(inputdata, MsgSpatial3D, MsgNone) {
+    // Agent properties in local register
+    int id = FLAMEGPU->getVariable<int>("id");
+    // Agent position
+    float agent_x = FLAMEGPU->getVariable<float>("x");
+    float agent_y = FLAMEGPU->getVariable<float>("y");
+    //Alter velocity to herd together with fellow prey agents
+    float group_center_x = 0.0;
+    float group_center_y = 0.0;
+    float group_velocity_x = 0.0;
+    float group_velocity_y = 0.0;
+    float avoidance_x = 0.0;
+    float avoidance_y = 0.0;
+    float separation = 0.0;
+    int group_center_count = 0;
+    const float message_x = 0.0;
+    const float message_y = 0.0;
+    const int message_id = 0;
 
-                // Update collision centre
-                if (separation < (SEPARATION_RADIUS)) {  // dependant on model size
-                    collision_centre_x += message_x;
-                    collision_centre_y += message_y;
-                    collision_centre_z += message_z;
-                    collision_count += 1;
-                }
+    const float PREY_GROUP_COHESION_RADIUS = FLAMEGPU->environment.getProperty<float>("PREY_GROUP_COHESION_RADIUS");
+    const float SAME_SPECIES_AVOIDANCE_RADIUS = FLAMEGPU->environment.getProperty<float>("SAME_SPECIES_AVOIDANCE_RADIUS");
+    // Iterate location messages, accumulating relevant data and counts.
+    for (const auto &message : FLAMEGPU->message_in(agent_x, agent_y, agent_z)) {
+        
+        message_x = message.getVariable<float>("x");
+        message_y = message.getVariable<float>("y");
+        message_id = message.getVariable<int>("id");
+
+        // Check interaction radius
+        separation = vec3Length(agent_x - message_x, agent_y - message_y, 0.0);
+
+        if (separation < (PREY_GROUP_COHESION_RADIUS) and not id==message_id) {
+            // Update the percieved centre
+            group_center_x += message_x;
+            group_center_y += message_y;
+            group_center_count += 1;
+
+            if (separation<(SAME_SPECIES_AVOIDANCE_RADIUS) and separation>0.0) {
+                avoidance_x += SAME_SPECIES_AVOIDANCE_RADIUS/(separation*(agent_x-message_x));
+                avoidance_y += SAME_SPECIES_AVOIDANCE_RADIUS/(separation*(agent_y-message_y));
             }
         }
     }
 
-    // Divide positions/velocities by relevant counts.
-    vec3Div(perceived_centre_x, perceived_centre_y, perceived_centre_z, perceived_count);
-    vec3Div(global_velocity_x, global_velocity_y, global_velocity_z, perceived_count);
-    vec3Div(global_velocity_x, global_velocity_y, global_velocity_z, collision_count);
-
-    // Total change in velocity
-    float velocity_change_x = 0.f;
-    float velocity_change_y = 0.f;
-    float velocity_change_z = 0.f;
-
-    // Rule 1) Steer towards perceived centre of flock (Cohesion)
-    float steer_velocity_x = 0.f;
-    float steer_velocity_y = 0.f;
-    float steer_velocity_z = 0.f;
-    if (perceived_count > 0) {
-        const float STEER_SCALE = FLAMEGPU->environment.getProperty<float>("STEER_SCALE");
-        steer_velocity_x = (perceived_centre_x - agent_x) * STEER_SCALE;
-        steer_velocity_y = (perceived_centre_y - agent_y) * STEER_SCALE;
-        steer_velocity_z = (perceived_centre_z - agent_z) * STEER_SCALE;
+    if (group_centre_count>0) {
+        group_center_x /= group_centre_count;
+        group_center_y /= group_centre_count;
+        group_velocity_x = (group_center_x - agent_x);
+        group_velocity_y = (group_center_y - agent_y);
     }
-    velocity_change_x += steer_velocity_x;
-    velocity_change_y += steer_velocity_y;
-    velocity_change_z += steer_velocity_z;
-
-    // Rule 2) Match neighbours speeds (Alignment)
-    float match_velocity_x = 0.f;
-    float match_velocity_y = 0.f;
-    float match_velocity_z = 0.f;
-    if (collision_count > 0) {
-        const float MATCH_SCALE = FLAMEGPU->environment.getProperty<float>("MATCH_SCALE");
-        match_velocity_x = global_velocity_x * MATCH_SCALE;
-        match_velocity_y = global_velocity_y * MATCH_SCALE;
-        match_velocity_z = global_velocity_z * MATCH_SCALE;
-    }
-    velocity_change_x += match_velocity_x;
-    velocity_change_y += match_velocity_y;
-    velocity_change_z += match_velocity_z;
-
-    // Rule 3) Avoid close range neighbours (Separation)
-    float avoid_velocity_x = 0.0f;
-    float avoid_velocity_y = 0.0f;
-    float avoid_velocity_z = 0.0f;
-    if (collision_count > 0) {
-        const float COLLISION_SCALE = FLAMEGPU->environment.getProperty<float>("COLLISION_SCALE");
-        avoid_velocity_x = (agent_x - collision_centre_x) * COLLISION_SCALE;
-        avoid_velocity_y = (agent_y - collision_centre_y) * COLLISION_SCALE;
-        avoid_velocity_z = (agent_z - collision_centre_z) * COLLISION_SCALE;
-    }
-    velocity_change_x += avoid_velocity_x;
-    velocity_change_y += avoid_velocity_y;
-    velocity_change_z += avoid_velocity_z;
-
-    // Global scale of velocity change
-    vec3Mult(velocity_change_x, velocity_change_y, velocity_change_z, FLAMEGPU->environment.getProperty<float>("GLOBAL_SCALE"));
-
-    // Update agent velocity
-    agent_fx += velocity_change_x;
-    agent_fy += velocity_change_y;
-    agent_fz += velocity_change_z;
-
-    // Bound velocity
-    float agent_fscale = vec3Length(agent_fx, agent_fy, agent_fz);
-    if (agent_fscale > 1) {
-        vec3Div(agent_fx, agent_fy, agent_fz, agent_fscale);
-    }
-
-    // Apply the velocity
-    const float TIME_SCALE = FLAMEGPU->environment.getProperty<float>("TIME_SCALE");
-    agent_x += agent_fx * TIME_SCALE;
-    agent_y += agent_fy * TIME_SCALE;
-    agent_z += agent_fz * TIME_SCALE;
-
-    // Bound position
-    clampPosition(agent_x, agent_y, agent_z, FLAMEGPU->environment.getProperty<float>("MIN_POSITION"), FLAMEGPU->environment.getProperty<float>("MAX_POSITION"));
-
-    // Update global agent memory.
-    FLAMEGPU->setVariable<float>("x", agent_x);
-    FLAMEGPU->setVariable<float>("y", agent_y);
-    FLAMEGPU->setVariable<float>("z", agent_z);
-
-    FLAMEGPU->setVariable<float>("fx", agent_fx);
-    FLAMEGPU->setVariable<float>("fy", agent_fy);
-    FLAMEGPU->setVariable<float>("fz", agent_fz);
-
+    float current_steer_x = FLAMEGPU->getVariable<float>("steer_x");
+    float current_steer_y = FLAMEGPU->getVariable<float>("steer_y");
+    FLAMEGPU->setVariable<float>("steer_x", current_steer_x+avoid_x+group_velocity_x);
+    FLAMEGPU->setVariable<float>("steer_y", current_steer_y+avoid_y+group_velocity_y);
     return ALIVE;
 }
+"""
+prey_grass_location_input_data="""
+
 """
 
 
