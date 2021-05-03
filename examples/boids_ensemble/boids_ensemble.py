@@ -7,13 +7,14 @@ import experiment_generator as exp
 sns.set()
 
 # Set whether to run single model or ensemble, boid population size, and simulation steps 
-ENSEMBLE = True;
+ENSEMBLE = False;
 ENSEMBLE_RUNS = 2;
 POPULATION_SIZE = 64;
 #STEPS = 100;
 STEPS = 10;
 # Change to false if pyflamegpu has not been built with visualisation support
 VISUALISATION = True;
+TESTING=False;
 
 """
   FLAME GPU 2 implementation of the Boids model, using spatial3D messaging.
@@ -457,54 +458,51 @@ run_plan_vector.setRandomSimulationSeed(simulation_seed,1000);
 
 
 
+if (TESTING):
+
+    test = exp.InitialStateGenerator();
+
+    test1 = test.setGlobalFloat("test_var",0);
 
 
-test = exp.InitialStateGenerator();
+    test2 = exp.AgentPopulation("Boid");
 
-test1 = test.setGlobalFloat("test_var",0);
-
-
-test2 = exp.AgentPopulation("Boid");
-
-test3 = test2.setPopSize(10);
-
-
-
-
-boid_population = exp.AgentPopulation("Boid");
-boid_population.setPopSizeRandom((256,1024));
-boid_population.setVariableRandomPerAgent("x",(-1.0,1.0));
-boid_population.setVariableRandomPerAgent("y",(-1.0,1.0));
-boid_population.setVariableRandomPerAgent("z",(-1.0,1.0));
-boid_population.setVariableRandomPerAgent("fx",(-1.0,1.0));
-boid_population.setVariableRandomPerAgent("fy",(-1.0,1.0));
-boid_population.setVariableRandomPerAgent("fz",(-1.0,1.0));
-
-
-initial_states = exp.InitialStateGenerator();
-initial_states.setGlobalRandom("test_global",(0,100));
-initial_states.addAgentPopulation(boid_population);
-
-
-experiment = exp.Experiment("test_experiment");
-experiment.setModel(model);
-experiment.initialStateGenerator(initial_states);
-experiment.setSimulationSteps(10);
-experiment.setRuns(3);
-
-
-#experiment.begin();
-
-
-print(experiment.generator.agent_list[0].name);
+    test3 = test2.setPopSize(10);
 
 
 
-search = exp.Search();
-search.GA();
+
+    boid_population = exp.AgentPopulation("Boid");
+    boid_population.setPopSizeRandom((256,1024));
+    boid_population.setVariableRandomPerAgent("x",(-1.0,1.0));
+    boid_population.setVariableRandomPerAgent("y",(-1.0,1.0));
+    boid_population.setVariableRandomPerAgent("z",(-1.0,1.0));
+    boid_population.setVariableRandomPerAgent("fx",(-1.0,1.0));
+    boid_population.setVariableRandomPerAgent("fy",(-1.0,1.0));
+    boid_population.setVariableRandomPerAgent("fz",(-1.0,1.0));
+
+
+    initial_states = exp.InitialStateGenerator();
+    initial_states.setGlobalRandom("test_global",(0,100));
+    initial_states.addAgentPopulation(boid_population);
+
+
+    experiment = exp.Experiment("test_experiment");
+    experiment.setModel(model);
+    experiment.initialStateGenerator(initial_states);
+    experiment.setSimulationSteps(10);
+    experiment.setRuns(3);
+
+
+    #experiment.begin();
+
+
+    print(experiment.generator.agent_list[0].name);
 
 
 
+    search = exp.Search();
+    search.GA();
 
 
 
@@ -514,190 +512,193 @@ search.GA();
 
 
 
-
-# """
-#   Create Model Runner
-# """  
-# if ENSEMBLE: 
-#     simulation = pyflamegpu.CUDAEnsemble(model);
-# else:
-#     simulation = pyflamegpu.CUDASimulation(model);
-
-# # Create and configure logging details 
-# logging_config = pyflamegpu.LoggingConfig(model);
-# agent_log = logging_config.agent("Boid");
-# agent_log.logMeanFloat("x");
-# agent_log.logMeanFloat("y");
-# agent_log.logMeanFloat("z");
-# agent_log.logMeanFloat("fx");
-# agent_log.logMeanFloat("fy");
-# agent_log.logMeanFloat("fz");
-# # agent_log.logStandardDevFloat("x");
-# # agent_log.logStandardDevFloat("y");
-# # agent_log.logStandardDevFloat("z");
-# agent_log.logStandardDevFloat("fx");
-# agent_log.logStandardDevFloat("fy");
-# agent_log.logStandardDevFloat("fz");
-# step_log = pyflamegpu.StepLoggingConfig(logging_config);
-# step_log.setFrequency(1);
-
-
-# simulation.setStepLog(step_log);
-# simulation.setExitLog(logging_config)
-
-
-# """
-#   Create Visualisation
-# """
-# if pyflamegpu.VISUALISATION and VISUALISATION and not ENSEMBLE:
-#     visualisation = simulation.getVisualisation();
-#     # Configure vis
-#     envWidth = env.getPropertyFloat("MAX_POSITION") - env.getPropertyFloat("MIN_POSITION");
-#     INIT_CAM = env.getPropertyFloat("MAX_POSITION") * 1.25;
-#     visualisation.setInitialCameraLocation(INIT_CAM, INIT_CAM, INIT_CAM);
-#     visualisation.setCameraSpeed(0.002 * envWidth);
-#     circ_agt = visualisation.addAgent("Boid");
-#     # Position vars are named x, y, z; so they are used by default
-#     circ_agt.setModel(pyflamegpu.ICOSPHERE);
-#     circ_agt.setModelScale(env.getPropertyFloat("SEPARATION_RADIUS"));
-
-#     visualisation.activate();
-
-# """
-#   Initialise Model
-# """
-# simulation.initialise(sys.argv);
-
-# """
-#   Execution
-# """
-# if ENSEMBLE:
-#     simulation.simulate(run_plan_vector);
-# else:
-#     simulation.simulate();
-
-# """
-#   Export Pop
-# """
-# # simulation.exportData("end.xml");
-
-# # Join Visualisation
-# if pyflamegpu.VISUALISATION and VISUALISATION and not ENSEMBLE:
-#     visualisation.join();
+if (not TESTING):
 
 
 
-# # Deal with logs
-# if ENSEMBLE:
-#     logs = simulation.getLogs();
-# else:
-#     logs = simulation.getRunLog();
+    """
+      Create Model Runner
+    """  
+    if ENSEMBLE: 
+        simulation = pyflamegpu.CUDAEnsemble(model);
+    else:
+        simulation = pyflamegpu.CUDASimulation(model);
+
+    # Create and configure logging details 
+    logging_config = pyflamegpu.LoggingConfig(model);
+    agent_log = logging_config.agent("Boid");
+    agent_log.logMeanFloat("x");
+    agent_log.logMeanFloat("y");
+    agent_log.logMeanFloat("z");
+    agent_log.logMeanFloat("fx");
+    agent_log.logMeanFloat("fy");
+    agent_log.logMeanFloat("fz");
+    # agent_log.logStandardDevFloat("x");
+    # agent_log.logStandardDevFloat("y");
+    # agent_log.logStandardDevFloat("z");
+    agent_log.logStandardDevFloat("fx");
+    agent_log.logStandardDevFloat("fy");
+    agent_log.logStandardDevFloat("fz");
+    step_log = pyflamegpu.StepLoggingConfig(logging_config);
+    step_log.setFrequency(1);
 
 
-# if ENSEMBLE:
-#     positions_mean = [None]*ENSEMBLE_RUNS
-#     positions_std = [None]*ENSEMBLE_RUNS
-#     velocities_mean = [None]*ENSEMBLE_RUNS
-#     velocities_std = [None]*ENSEMBLE_RUNS
-#     text_pos = [None]*ENSEMBLE_RUNS
-#     # Read logs
-#     for i in range(len(logs)):
-#         sl = logs[i].getStepLog();
-#         positions_mean[i] = [[],[],[]];
-#         velocities_mean[i] = [[],[],[]];
-#         velocities_std[i] = [[],[],[]];
-#         text_pos[i] = [[0,0,0,"start"],[0,0,0,"finish"]];
-#         counter = 0;
-#         for step in sl:
-#             if counter>0:
-#                 agents = step.getAgent("Boid");
-#                 # Collect agent data
-#                 positions_mean[i][0].append(agents.getMean("x"));
-#                 positions_mean[i][1].append(agents.getMean("y"));
-#                 positions_mean[i][2].append(agents.getMean("z"));
-#                 velocities_mean[i][0].append(agents.getMean("fx"));
-#                 velocities_mean[i][1].append(agents.getMean("fy"));
-#                 velocities_mean[i][2].append(agents.getMean("fz"));
-#                 velocities_std[i][0].append(agents.getStandardDev("fx"));
-#                 velocities_std[i][1].append(agents.getStandardDev("fy"));
-#                 velocities_std[i][2].append(agents.getStandardDev("fz"));
-#                 #Set start and finish positions for graph text placement
-#                 if counter==1:
-#                     text_pos[i][0][0] = agents.getMean("x");
-#                     text_pos[i][0][1] = agents.getMean("y");
-#                     text_pos[i][0][2] = agents.getMean("z");
-#                 elif counter==len(sl)-1:
-#                     text_pos[i][1][0] = agents.getMean("x");
-#                     text_pos[i][1][1] = agents.getMean("y");
-#                     text_pos[i][1][2] = agents.getMean("z");
-#             counter+=1;
+    simulation.setStepLog(step_log);
+    simulation.setExitLog(logging_config)
 
-#     # Generate graphs 
-#     for j in range(ENSEMBLE_RUNS):
-#         # Plot 3d graph of average flock position over simulation for individual model run
-#         fig = plt.figure(figsize=(8,8));
-#         ax = fig.gca(projection='3d');
-#         ax.set_xlabel("Model environment x");
-#         ax.set_ylabel("Model environment y");
-#         ax.set_zlabel("Model environment z");
-#         fig.suptitle("Ensemble run "+str(j)+" boids mean flock positions",fontsize=16);
-#         label = "Boids mean flock position, ensemble run "+str(j);
-#         fname = "average_flock_positions_run"+str(j)+".png";
-#         # Position start and finish flock position text
-#         for k in text_pos[j]:
-#             ax.text(k[0],k[1],k[2],k[3],None);
-#         ax.plot(positions_mean[j][0], positions_mean[j][1], positions_mean[j][2], label=label);
-#         #ax.set_xlim3d([-1.0,1.0]);
-#         #ax.set_ylim3d([-1.0,1.0]);
-#         #ax.set_zlim3d([-1.0,1.0]);
-#         ax.legend();
-#         plt.savefig(fname,format='png');
-#         plt.close(fig);
 
-#         # Plot graphs for average of each fx, fy, and fz with standard deviation error bars
-#         steplist = range(STEPS);
-#         fig,(axx,axy,axz) = plt.subplots(1,3, figsize=(21,6));
-#         fig.suptitle("Ensemble run "+str(j)+" mean boid velocities with std errorbar",fontsize=16);
-#         velfname = "mean_velocities_run"+str(j)+".png";
-#         axx.errorbar(steplist,velocities_mean[j][0],yerr=velocities_std[j][0],elinewidth=0.5,capsize=1.0);
-#         axx.set_xlabel("Simulation step");
-#         axx.set_ylabel("Boid agents average fx");
-#         axy.errorbar(steplist,velocities_mean[j][1],yerr=velocities_std[j][1],elinewidth=0.5,capsize=1.0);
-#         axy.set_xlabel("Simulation step");
-#         axy.set_ylabel("Boid agents average fy");
-#         axz.errorbar(steplist,velocities_mean[j][2],yerr=velocities_std[j][2],elinewidth=0.5,capsize=1.0);
-#         axz.set_xlabel("Simulation step");
-#         axz.set_ylabel("Boid agents average fz");
-#         plt.savefig(velfname,format='png');
-#         plt.close(fig);
+    """
+      Create Visualisation
+    """
+    if pyflamegpu.VISUALISATION and VISUALISATION and not ENSEMBLE:
+        visualisation = simulation.getVisualisation();
+        # Configure vis
+        envWidth = env.getPropertyFloat("MAX_POSITION") - env.getPropertyFloat("MIN_POSITION");
+        INIT_CAM = env.getPropertyFloat("MAX_POSITION") * 1.25;
+        visualisation.setInitialCameraLocation(INIT_CAM, INIT_CAM, INIT_CAM);
+        visualisation.setCameraSpeed(0.002 * envWidth);
+        circ_agt = visualisation.addAgent("Boid");
+        # Position vars are named x, y, z; so they are used by default
+        circ_agt.setModel(pyflamegpu.ICOSPHERE);
+        circ_agt.setModelScale(env.getPropertyFloat("SEPARATION_RADIUS"));
 
-#     # Plot every model in esemble's average flock position over simulation on the same 3d graph
-#     fig = plt.figure(figsize=(12,12));
-#     fig.suptitle("Ensemble Boids mean flock positions",fontsize=16);
-#     ax = fig.gca(projection='3d');
-#     ax.set_xlabel("Model environment x");
-#     ax.set_ylabel("Model environment y");
-#     ax.set_zlabel("Model environment z");
-#     fname = "ensemble_average_flock_positions.png";
-#     ## Plot start and finish text for each flock path ---VERY CLUTTERED---
-#     # for i in text_pos:
-#     #     for k in i:
-#     #         ax.text(k[0],k[1],k[2],k[3],'x');
-#     jcount = 0;
-#     for j in positions_mean:
-#         label1 = "Run "+str(jcount);
-#         ax.plot(j[0], j[1], j[2], label=label1);
-#         jcount+=1;
-#     #ax.set_xlim3d([-1.0,1.0]);
-#     #ax.set_ylim3d([-1.0,1.0]);
-#     #ax.set_zlim3d([-1.0,1.0]);
-#     ax.legend();
-#     plt.savefig(fname,format='png');
-#     plt.close(fig);
-# else:
-#     steps = logs.getStepLog();
-#     for step in steps:
-#         stepcount = step.getStepCount();
-#         agents = step.getAgent("Boid");
-#         print("Step: ",stepcount,"\tAverage flock position (x,y,z): ",agents.getMean("x"),", ",agents.getMean("y"),", ",agents.getMean("z"));
+        visualisation.activate();
+
+    """
+      Initialise Model
+    """
+    simulation.initialise(sys.argv);
+
+    """
+      Execution
+    """
+    if ENSEMBLE:
+        simulation.simulate(run_plan_vector);
+    else:
+        simulation.simulate();
+
+    """
+      Export Pop
+    """
+    # simulation.exportData("end.xml");
+
+    # Join Visualisation
+    if pyflamegpu.VISUALISATION and VISUALISATION and not ENSEMBLE:
+        visualisation.join();
+
+
+
+    # Deal with logs
+    if ENSEMBLE:
+        logs = simulation.getLogs();
+    else:
+        logs = simulation.getRunLog();
+
+
+    if ENSEMBLE:
+        positions_mean = [None]*ENSEMBLE_RUNS
+        positions_std = [None]*ENSEMBLE_RUNS
+        velocities_mean = [None]*ENSEMBLE_RUNS
+        velocities_std = [None]*ENSEMBLE_RUNS
+        text_pos = [None]*ENSEMBLE_RUNS
+        # Read logs
+        for i in range(len(logs)):
+            sl = logs[i].getStepLog();
+            positions_mean[i] = [[],[],[]];
+            velocities_mean[i] = [[],[],[]];
+            velocities_std[i] = [[],[],[]];
+            text_pos[i] = [[0,0,0,"start"],[0,0,0,"finish"]];
+            counter = 0;
+            for step in sl:
+                if counter>0:
+                    agents = step.getAgent("Boid");
+                    # Collect agent data
+                    positions_mean[i][0].append(agents.getMean("x"));
+                    positions_mean[i][1].append(agents.getMean("y"));
+                    positions_mean[i][2].append(agents.getMean("z"));
+                    velocities_mean[i][0].append(agents.getMean("fx"));
+                    velocities_mean[i][1].append(agents.getMean("fy"));
+                    velocities_mean[i][2].append(agents.getMean("fz"));
+                    velocities_std[i][0].append(agents.getStandardDev("fx"));
+                    velocities_std[i][1].append(agents.getStandardDev("fy"));
+                    velocities_std[i][2].append(agents.getStandardDev("fz"));
+                    #Set start and finish positions for graph text placement
+                    if counter==1:
+                        text_pos[i][0][0] = agents.getMean("x");
+                        text_pos[i][0][1] = agents.getMean("y");
+                        text_pos[i][0][2] = agents.getMean("z");
+                    elif counter==len(sl)-1:
+                        text_pos[i][1][0] = agents.getMean("x");
+                        text_pos[i][1][1] = agents.getMean("y");
+                        text_pos[i][1][2] = agents.getMean("z");
+                counter+=1;
+
+        # Generate graphs 
+        for j in range(ENSEMBLE_RUNS):
+            # Plot 3d graph of average flock position over simulation for individual model run
+            fig = plt.figure(figsize=(8,8));
+            ax = fig.gca(projection='3d');
+            ax.set_xlabel("Model environment x");
+            ax.set_ylabel("Model environment y");
+            ax.set_zlabel("Model environment z");
+            fig.suptitle("Ensemble run "+str(j)+" boids mean flock positions",fontsize=16);
+            label = "Boids mean flock position, ensemble run "+str(j);
+            fname = "average_flock_positions_run"+str(j)+".png";
+            # Position start and finish flock position text
+            for k in text_pos[j]:
+                ax.text(k[0],k[1],k[2],k[3],None);
+            ax.plot(positions_mean[j][0], positions_mean[j][1], positions_mean[j][2], label=label);
+            #ax.set_xlim3d([-1.0,1.0]);
+            #ax.set_ylim3d([-1.0,1.0]);
+            #ax.set_zlim3d([-1.0,1.0]);
+            ax.legend();
+            plt.savefig(fname,format='png');
+            plt.close(fig);
+
+            # Plot graphs for average of each fx, fy, and fz with standard deviation error bars
+            steplist = range(STEPS);
+            fig,(axx,axy,axz) = plt.subplots(1,3, figsize=(21,6));
+            fig.suptitle("Ensemble run "+str(j)+" mean boid velocities with std errorbar",fontsize=16);
+            velfname = "mean_velocities_run"+str(j)+".png";
+            axx.errorbar(steplist,velocities_mean[j][0],yerr=velocities_std[j][0],elinewidth=0.5,capsize=1.0);
+            axx.set_xlabel("Simulation step");
+            axx.set_ylabel("Boid agents average fx");
+            axy.errorbar(steplist,velocities_mean[j][1],yerr=velocities_std[j][1],elinewidth=0.5,capsize=1.0);
+            axy.set_xlabel("Simulation step");
+            axy.set_ylabel("Boid agents average fy");
+            axz.errorbar(steplist,velocities_mean[j][2],yerr=velocities_std[j][2],elinewidth=0.5,capsize=1.0);
+            axz.set_xlabel("Simulation step");
+            axz.set_ylabel("Boid agents average fz");
+            plt.savefig(velfname,format='png');
+            plt.close(fig);
+
+        # Plot every model in esemble's average flock position over simulation on the same 3d graph
+        fig = plt.figure(figsize=(12,12));
+        fig.suptitle("Ensemble Boids mean flock positions",fontsize=16);
+        ax = fig.gca(projection='3d');
+        ax.set_xlabel("Model environment x");
+        ax.set_ylabel("Model environment y");
+        ax.set_zlabel("Model environment z");
+        fname = "ensemble_average_flock_positions.png";
+        ## Plot start and finish text for each flock path ---VERY CLUTTERED---
+        # for i in text_pos:
+        #     for k in i:
+        #         ax.text(k[0],k[1],k[2],k[3],'x');
+        jcount = 0;
+        for j in positions_mean:
+            label1 = "Run "+str(jcount);
+            ax.plot(j[0], j[1], j[2], label=label1);
+            jcount+=1;
+        #ax.set_xlim3d([-1.0,1.0]);
+        #ax.set_ylim3d([-1.0,1.0]);
+        #ax.set_zlim3d([-1.0,1.0]);
+        ax.legend();
+        plt.savefig(fname,format='png');
+        plt.close(fig);
+    else:
+        steps = logs.getStepLog();
+        for step in steps:
+            stepcount = step.getStepCount();
+            agents = step.getAgent("Boid");
+            #print("Step: ",stepcount,"\tAverage flock position (x,y,z): ",agents.getMean("x"),", ",agents.getMean("y"),", ",agents.getMean("z"));
 

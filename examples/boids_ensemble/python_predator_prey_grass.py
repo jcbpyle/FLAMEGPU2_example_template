@@ -7,15 +7,15 @@ import experiment_generator as exp
 sns.set()
 
 # Set whether to run single model or ensemble, agent population size, and simulation steps 
-ENSEMBLE = True;
-ENSEMBLE_RUNS = 2;
+ENSEMBLE = False;
+ENSEMBLE_RUNS = 1;
 PREY_POPULATION_SIZE = 64;
-PREDATOR_POPULATION_SIZE = 64;
-GRASS_POPULATION_SIZE = 64;
+PREDATOR_POPULATION_SIZE = 10;
+GRASS_POPULATION_SIZE = 200;
 #STEPS = 100;
-STEPS = 10;
+STEPS = 1000;
 # Change to false if pyflamegpu has not been built with visualisation support
-VISUALISATION = True;
+VISUALISATION = False;
 
 """
   FLAME GPU 2 implementation of the Predator, Prey and Grass model, using spatial3D messaging.
@@ -33,6 +33,16 @@ VISUALISATION = True;
 """
 def vec3Length(x, y, z):
     return math.sqrt(x * x + y * y + z * z);
+
+"""
+  Get the length of a vector
+  @param x x component of the vector
+  @param y y component of the vector
+  @return the length of the vector
+"""
+def vec2Length(x, y):
+    return math.sqrt(x * x + y * y);
+
 
 """
   Add a scalar to a vector in-place
@@ -82,6 +92,16 @@ def vec3Div(x, y, z, divisor):
     y /= divisor;
     z /= divisor;
 
+"""
+  Divide a vector by a scalar value in-place
+  @param x x component of the vector
+  @param y y component of the vector
+  @param divisor scalar value to divide by
+"""
+def vec2Div(x, y, divisor):
+    x /= divisor;
+    y /= divisor;
+
 
 """
   Normalize a 3 component vector in-place
@@ -93,6 +113,16 @@ def vec3Normalize(x, y, z):
     # Get the length
     length = vec3Length(x, y, z);
     vec3Div(x, y, z, length);
+
+"""
+  Normalize a 2 component vector in-place
+  @param x x component of the vector
+  @param y y component of the vector
+"""
+def vec2Normalize(x, y):
+    # Get the length
+    length = vec2Length(x, y);
+    vec2Div(x, y, length);
 
 """
   Clamp each component of a 3-part position to lie within a minimum and maximum value.
@@ -115,68 +145,65 @@ def clampPosition(x, y, z, MIN_POSITION, MAX_POSITION):
     z = MAX_POSITION if (z > MAX_POSITION) else z;
 
 """
-  Ensure each component of a 3-part position lies within a minimum and maximum value, wrapping toroidally if bounds are exceeded. TODO: move away from wrapped edge same amount as bound crossed?
+  Ensure each component of a 2-part position lies within a minimum and maximum value, wrapping toroidally if bounds are exceeded. TODO: move away from wrapped edge same amount as bound crossed?
   Performs the operation in place
   @param x x component of the vector
   @param y y component of the vector
-  @param z z component of the vector
   @param MIN_POSITION the minimum value for each component
   @param MAX_POSITION the maximum value for each component
 """
-def boundPosition(x, y, z, MIN_POSITION, MAX_POSITION)
+def boundPosition(x, y, MIN_POSITION, MAX_POSITION):
     agent_position.x = MAX_POSITION if (x<MIN_POSITION) else x;
     agent_position.x = MIN_POSITION if (x>MAX_POSITION) else x;
 
     agent_position.y = MAX_POSITION if (y<MIN_POSITION) else y;
     agent_position.y = MIN_POSITION if (y>MAX_POSITION) else y;
 
-    agent_position.z = MAX_POSITION if (z<MIN_POSITION) else z;
-    agent_position.z = MIN_POSITION if (z>MAX_POSITION) else z;
-
 """
-  outputdata agent function for Prey agents, which outputs publicly visible properties to a message list
+  PREY
+  prey_output_location_data agent function for Prey agents, which outputs publicly visible properties to a message list
 """
-prey_outputdata = """
-FLAMEGPU_AGENT_FUNCTION(outputdata, MsgNone, MsgSpatial3D) {
-    // Output each prey agent's location (and other visible properties if implemented)
-    FLAMEGPU->prey_message_out.setVariable<int>("id", FLAMEGPU->getVariable<int>("id"));
-    FLAMEGPU->prey_message_out.setVariable<float>("x", FLAMEGPU->getVariable<float>("x"));
-    FLAMEGPU->prey_message_out.setVariable<float>("y", FLAMEGPU->getVariable<float>("y"));
-    FLAMEGPU->prey_message_out.setVariable<float>("z", FLAMEGPU->getVariable<float>("z"));
-    return ALIVE;
-    }"""
-"""
-  inputdata agent function for Prey agents, which reads data from neighbouring agents, to perform predator avoidance, prey herding, and food seeking behaviour.
-"""
-prey_predator_location_inputdata = """
+prey_output_location_data = """
 // Vector utility functions, see top of file for versions with commentary
 FLAMEGPU_HOST_DEVICE_FUNCTION float vec3Length(const float x, const float y, const float z) {
-    return sqrtf(x * x + y * y + z * z);
+  return sqrtf(x * x + y * y + z * z);
+}
+FLAMEGPU_HOST_DEVICE_FUNCTION float vec2Length(const float x, const float y) {
+  return sqrtf(x * x + y * y);
 }
 FLAMEGPU_HOST_DEVICE_FUNCTION void vec3Add(float &x, float &y, float &z, const float value) {
-    x += value;
-    y += value;
-    z += value;
+  x += value;
+  y += value;
+  z += value;
 }
 FLAMEGPU_HOST_DEVICE_FUNCTION void vec3Sub(float &x, float &y, float &z, const float value) {
-    x -= value;
-    y -= value;
-    z -= value;
+  x -= value;
+  y -= value;
+  z -= value;
 }
 FLAMEGPU_HOST_DEVICE_FUNCTION void vec3Mult(float &x, float &y, float &z, const float multiplier) {
-    x *= multiplier;
-    y *= multiplier;
-    z *= multiplier;
+  x *= multiplier;
+  y *= multiplier;
+  z *= multiplier;
 }
 FLAMEGPU_HOST_DEVICE_FUNCTION void vec3Div(float &x, float &y, float &z, const float divisor) {
-    x /= divisor;
-    y /= divisor;
-    z /= divisor;
+  x /= divisor;
+  y /= divisor;
+  z /= divisor;
+}
+FLAMEGPU_HOST_DEVICE_FUNCTION void vec2Div(float &x, float &y, const float divisor) {
+  x /= divisor;
+  y /= divisor;
 }
 FLAMEGPU_HOST_DEVICE_FUNCTION void vec3Normalize(float &x, float &y, float &z) {
-    // Get the length
-    float length = vec3Length(x, y, z);
-    vec3Div(x, y, z, length);
+  // Get the length
+  float length = vec3Length(x, y, z);
+  vec3Div(x, y, z, length);
+}
+FLAMEGPU_HOST_DEVICE_FUNCTION void vec2Normalize(float &x, float &y) {
+  // Get the length
+  float length = vec2Length(x, y);
+  vec2Div(x, y, length);
 }
 FLAMEGPU_HOST_DEVICE_FUNCTION void clampPosition(float &x, float &y, float &z, const float MIN_POSITION, const float MAX_POSITION) {
     x = (x < MIN_POSITION)? MIN_POSITION: x;
@@ -188,109 +215,468 @@ FLAMEGPU_HOST_DEVICE_FUNCTION void clampPosition(float &x, float &y, float &z, c
     z = (z < MIN_POSITION)? MIN_POSITION: z;
     z = (z > MAX_POSITION)? MAX_POSITION: z;
 }
+FLAMEGPU_HOST_DEVICE_FUNCTION void boundPosition(float &x, float &y, const float MIN_POSITION, const float MAX_POSITION) {
+  x = (x < MIN_POSITION)? MAX_POSITION: x;
+  x = (x > MAX_POSITION)? MIN_POSITION: x;
+
+  y = (y < MIN_POSITION)? MAX_POSITION: y;
+  y = (y > MAX_POSITION)? MIN_POSITION: y;
+}
+FLAMEGPU_AGENT_FUNCTION(prey_output_location_data, MsgNone, MsgSpatial2D) {
+  // Output each prey agent's location (and other visible properties if implemented)
+  FLAMEGPU->message_out.setVariable<int>("id", FLAMEGPU->getVariable<int>("id"));
+  FLAMEGPU->message_out.setVariable<float>("x", FLAMEGPU->getVariable<float>("x"));
+  FLAMEGPU->message_out.setVariable<float>("y", FLAMEGPU->getVariable<float>("y"));
+  return ALIVE;
+  }
+"""
+"""
+  prey_avoid_predators agent function for Prey agents, which reads data from neighbouring predator agents to alter course away
+"""
+prey_avoid_predators = """
 // Agent function
-FLAMEGPU_AGENT_FUNCTION(inputdata, MsgSpatial3D, MsgNone) {
-    // Agent properties in local register
-    int id = FLAMEGPU->getVariable<int>("id");
-    // Agent position
-    float agent_x = FLAMEGPU->getVariable<float>("x");
-    float agent_y = FLAMEGPU->getVariable<float>("y");
-    //Alter velocity to avoid predator agents
-    float average_center_x = 0.0;
-    float average_center_y = 0.0;
-    float avoidance_x = 0.0;
-    float avoidance_y = 0.0;
-    float separation = 0.0;
-    const float message_x = 0.0;
-    const float message_y = 0.0;
+FLAMEGPU_AGENT_FUNCTION(prey_avoid_predators, MsgSpatial2D, MsgNone) {
+  // Agent properties in local register
+  int id = FLAMEGPU->getVariable<int>("id");
+  // Agent position
+  float agent_x = FLAMEGPU->getVariable<float>("x");
+  float agent_y = FLAMEGPU->getVariable<float>("y");
+  //Alter velocity to avoid predator agents
+  float average_center_x = 0.0;
+  float average_center_y = 0.0;
+  float avoidance_x = 0.0;
+  float avoidance_y = 0.0;
+  float separation = 0.0;
+  float message_x = 0.0;
+  float message_y = 0.0;
+  const float PRED_PREY_INTERACTION_RADIUS = FLAMEGPU->environment.getProperty<float>("PRED_PREY_INTERACTION_RADIUS");
 
-    const float PRED_PREY_INTERACTION_RADIUS = FLAMEGPU->environment.getProperty<float>("PRED_PREY_INTERACTION_RADIUS");
-    // Iterate location messages, accumulating relevant data and counts.
-    for (const auto &message : FLAMEGPU->message_in(agent_x, agent_y, agent_z)) {
-        
-        message_x = message.getVariable<float>("x");
-        message_y = message.getVariable<float>("y");
+  // Iterate location messages, accumulating relevant data and counts.
+  for (const auto &message : FLAMEGPU->message_in(agent_x, agent_y)) {
+      
+    message_x = message.getVariable<float>("x");
+    message_y = message.getVariable<float>("y");
 
-        // Check interaction radius
-        separation = vec3Length(agent_x - message_x, agent_y - message_y, 0.0);
+    // Check interaction radius
+    separation = vec2Length(agent_x - message_x, agent_y - message_y);
 
-        if (separation < (PRED_PREY_INTERACTION_RADIUS) and separation>0.0) {
-            // Update the percieved centre
-            avoidance_x += PRED_PREY_INTERACTION_RADIUS / separation*(agent_x - message_x);
-            avoidance_y += PRED_PREY_INTERACTION_RADIUS / separation*(agent_y - message_y);
-        }
+    if (separation < (PRED_PREY_INTERACTION_RADIUS) and separation>0.0) {
+      // Update the percieved centre
+      avoidance_x += PRED_PREY_INTERACTION_RADIUS / separation*(agent_x - message_x);
+      avoidance_y += PRED_PREY_INTERACTION_RADIUS / separation*(agent_y - message_y);
     }
+  }
 
-    FLAMEGPU->setVariable<float>("steer_x", avoid_x);
-    FLAMEGPU->setVariable<float>("steer_y", avoid_y);
-    return ALIVE;
+  FLAMEGPU->setVariable<float>("steer_x", avoid_x);
+  FLAMEGPU->setVariable<float>("steer_y", avoid_y);
+  return ALIVE;
 }
 """
-prey_prey_location_inputdata = """
+prey_flock = """
 // Agent function
-FLAMEGPU_AGENT_FUNCTION(inputdata, MsgSpatial3D, MsgNone) {
-    // Agent properties in local register
-    int id = FLAMEGPU->getVariable<int>("id");
-    // Agent position
-    float agent_x = FLAMEGPU->getVariable<float>("x");
-    float agent_y = FLAMEGPU->getVariable<float>("y");
-    //Alter velocity to herd together with fellow prey agents
-    float group_center_x = 0.0;
-    float group_center_y = 0.0;
-    float group_velocity_x = 0.0;
-    float group_velocity_y = 0.0;
-    float avoidance_x = 0.0;
-    float avoidance_y = 0.0;
-    float separation = 0.0;
-    int group_center_count = 0;
-    const float message_x = 0.0;
-    const float message_y = 0.0;
-    const int message_id = 0;
+FLAMEGPU_AGENT_FUNCTION(prey_flock, MsgSpatial2D, MsgNone) {
+  // Agent properties in local register
+  int id = FLAMEGPU->getVariable<int>("id");
+  // Agent position
+  float agent_x = FLAMEGPU->getVariable<float>("x");
+  float agent_y = FLAMEGPU->getVariable<float>("y");
+  //Alter velocity to herd together with fellow prey agents
+  float group_center_x = 0.0;
+  float group_center_y = 0.0;
+  float group_velocity_x = 0.0;
+  float group_velocity_y = 0.0;
+  float avoidance_x = 0.0;
+  float avoidance_y = 0.0;
+  float separation = 0.0;
+  int group_center_count = 0;
+  float message_x = 0.0;
+  float message_y = 0.0;
+  int message_id = 0;
+  const float PREY_GROUP_COHESION_RADIUS = FLAMEGPU->environment.getProperty<float>("PREY_GROUP_COHESION_RADIUS");
+  const float SAME_SPECIES_AVOIDANCE_RADIUS = FLAMEGPU->environment.getProperty<float>("SAME_SPECIES_AVOIDANCE_RADIUS");
 
-    const float PREY_GROUP_COHESION_RADIUS = FLAMEGPU->environment.getProperty<float>("PREY_GROUP_COHESION_RADIUS");
-    const float SAME_SPECIES_AVOIDANCE_RADIUS = FLAMEGPU->environment.getProperty<float>("SAME_SPECIES_AVOIDANCE_RADIUS");
-    // Iterate location messages, accumulating relevant data and counts.
-    for (const auto &message : FLAMEGPU->message_in(agent_x, agent_y, agent_z)) {
-        
-        message_x = message.getVariable<float>("x");
-        message_y = message.getVariable<float>("y");
-        message_id = message.getVariable<int>("id");
+  // Iterate location messages, accumulating relevant data and counts.
+  for (const auto &message : FLAMEGPU->message_in(agent_x, agent_y)) {
+      
+    message_x = message.getVariable<float>("x");
+    message_y = message.getVariable<float>("y");
+    message_id = message.getVariable<int>("id");
 
-        // Check interaction radius
-        separation = vec3Length(agent_x - message_x, agent_y - message_y, 0.0);
+    // Check interaction radius
+    separation = vec2Length(agent_x - message_x, agent_y - message_y);
 
-        if (separation < (PREY_GROUP_COHESION_RADIUS) and not id==message_id) {
-            // Update the percieved centre
-            group_center_x += message_x;
-            group_center_y += message_y;
-            group_center_count += 1;
+    if (separation < (PREY_GROUP_COHESION_RADIUS) and not id==message_id) {
+      // Update the percieved centre
+      group_center_x += message_x;
+      group_center_y += message_y;
+      group_center_count += 1;
 
-            if (separation<(SAME_SPECIES_AVOIDANCE_RADIUS) and separation>0.0) {
-                avoidance_x += SAME_SPECIES_AVOIDANCE_RADIUS/(separation*(agent_x-message_x));
-                avoidance_y += SAME_SPECIES_AVOIDANCE_RADIUS/(separation*(agent_y-message_y));
-            }
-        }
+      if (separation<(SAME_SPECIES_AVOIDANCE_RADIUS) and separation>0.0) {
+        avoidance_x += SAME_SPECIES_AVOIDANCE_RADIUS/(separation*(agent_x-message_x));
+        avoidance_y += SAME_SPECIES_AVOIDANCE_RADIUS/(separation*(agent_y-message_y));
+      }
     }
+  }
 
-    if (group_centre_count>0) {
-        group_center_x /= group_centre_count;
-        group_center_y /= group_centre_count;
-        group_velocity_x = (group_center_x - agent_x);
-        group_velocity_y = (group_center_y - agent_y);
-    }
-    float current_steer_x = FLAMEGPU->getVariable<float>("steer_x");
-    float current_steer_y = FLAMEGPU->getVariable<float>("steer_y");
-    FLAMEGPU->setVariable<float>("steer_x", current_steer_x+avoid_x+group_velocity_x);
-    FLAMEGPU->setVariable<float>("steer_y", current_steer_y+avoid_y+group_velocity_y);
-    return ALIVE;
+  if (group_centre_count>0) {
+    group_center_x /= group_centre_count;
+    group_center_y /= group_centre_count;
+    group_velocity_x = (group_center_x - agent_x);
+    group_velocity_y = (group_center_y - agent_y);
+  }
+  float current_steer_x = FLAMEGPU->getVariable<float>("steer_x");
+  float current_steer_y = FLAMEGPU->getVariable<float>("steer_y");
+  FLAMEGPU->setVariable<float>("steer_x", current_steer_x+avoidance_x+group_velocity_x);
+  FLAMEGPU->setVariable<float>("steer_y", current_steer_y+avoidance_y+group_velocity_y);
+  return ALIVE;
 }
 """
-prey_grass_location_input_data="""
+prey_move="""
+FLAMEGPU_AGENT_FUNCTION(prey_move, MsgNone, MsgNone) {
+  //Agent position vector
+  float agent_x = FLAMEGPU->getVariable<float>("x");
+  float agent_y = FLAMEGPU->getVariable<float>("y");
+  float agent_fx = FLAMEGPU->getVariable<float>("fx");
+  float agent_fy = FLAMEGPU->getVariable<float>("fy");
+  float agent_steerx = FLAMEGPU->getVariable<float>("steer_x");
+  float agent_steery = FLAMEGPU->getVariable<float>("steer_y");
 
+  //Adjust the velocity according to the steering velocity
+  agent_fx += agent_steerx;
+  agent_fy += agent_steery;
+
+  //Limit the speed of the avoidance velocity
+  float current_speed = vec2Length(agent_fx, agent_fy);
+  if (current_speed > 1.0) {
+    agent_fx, agent_fy = vec2Normalize(agent_fx, agent_fy);
+  }
+
+  //Integrate the position by applying moving according to the velocity
+  const float DELTA_TIME = FLAMEGPU->environment.getProperty<float>("DELTA_TIME");
+  agent_x += agent_fx * DELTA_TIME;
+  agent_y += agent_fy * DELTA_TIME;
+
+
+  //Bound the position within the environment 
+  agent_x, agent_y = boundPosition(agent_x, agent_y, FLAMEGPU->environment.getProperty<float>("MIN_POSITION"), FLAMEGPU->environment.getProperty<float>("MAX_POSITION"));
+
+  //Update the agents position and velocity
+  FLAMEGPU->setVariable<float>("x",agent_x);
+  FLAMEGPU->setVariable<float>("y",agent_y);
+  FLAMEGPU->setVariable<float>("fx",agent_fx);
+  FLAMEGPU->setVariable<float>("fy",agent_fy);
+
+  //reduce life by one unit of energy
+  FLAMEGPU->setVariable<int>("life",FLAMEGPU->getVariable<int>("life")-1);
+
+  return 0;
+}
+"""
+prey_eaten = """
+FLAMEGPU_AGENT_FUNCTION(prey_eaten, MsgSpatial2D, MsgSpatial2D) {
+  int eaten = 0;
+  int predator_id = -1;
+  float closest_predator = FLAMEGPU->environment.getProperty<float>("PREDATOR_KILL_DISTANCE");
+  float agent_x = FLAMEGPU->getVariable<float>("x");
+  float agent_y = FLAMEGPU->getVariable<float>("y");
+  float message_x = 0.0;
+  float message_y = 0.0;
+  int message_id = 0;
+  float distance = 0.0;
+
+  // Iterate location messages, accumulating relevant data and counts.
+  for (const auto &message : FLAMEGPU->message_in(agent_x, agent_y)) {
+    message_x = message.getVariable<float>("x");
+    message_y = message.getVariable<float>("y");
+    message_id = message.getVariable<int>("id");
+    distance = vec2Length(agent_x - message_x, agent_y - message_y);
+    if (distance < closest_pred) {
+      predator_id = message_id;
+      closest_predator = distance;
+      eaten = 1;
+    }
+  }
+
+  //if one or more predators were within killing distance then notify the nearest predator that it has eaten this prey via a prey eaten message.
+  if (eaten) {
+    FLAMEGPU->message_out.setVariable<int>("predator_id", predator_id);
+    FLAMEGPU->message_out.setVariable<float>("x", FLAMEGPU->getVariable<float>("x"));
+    FLAMEGPU->message_out.setVariable<float>("y", FLAMEGPU->getVariable<float>("y"));
+  }
+
+  //return eaten value to remove dead (eaten == 1) agents from the simulation
+  return eaten;
+}
+"""
+prey_eat_or_starve = """
+FLAMEGPU_AGENT_FUNCTION(prey_eat_or_starve, MsgSpatial2D, MsgNone) {
+  int dead = 0;
+  int agent_life = FLAMEGPU->getVariable<int>("life");
+  int agent_id = FLAMEGPU->getVariable<int>("id");
+  int message_id = 0;
+  const int GAIN_FROM_FOOD_PREY = FLAMEGPU->environment.getProperty<int>("GAIN_FROM_FOOD_PREY");
+  //std::cout << "main function\n";
+  // Iterate grass eaten messages, accumulating relevant data and counts.
+  for (const auto &message : FLAMEGPU->message_in(agent_x, agent_y)) {
+    message_id = message.getVariable<int>("id");
+    if (agent_id == message_id) {
+      agent_life += GAIN_FROM_FOOD_PREY;
+    }
+  }
+
+  //if one or more predators were within killing distance then notify the nearest predator that it has eaten this prey via a prey eaten message.
+  if (agent_life < 1) {
+    dead = 1;
+  }
+  else {
+   FLAMEGPU->setVariable<int>("life", agent_life);
+  }
+
+  //return eaten value to remove dead (eaten == 1) agents from the simulation
+  return dead;
+}
+"""
+"""
+  PREDATOR
+  predator_output_location_data agent function for predator agents, which outputs publicly visible properties to a message list
+"""
+predator_output_location_data = """
+FLAMEGPU_AGENT_FUNCTION(predator_output_location_data, MsgNone, MsgSpatial2D) {
+  // Output each predator agent's location (and other visible properties if implemented)
+  FLAMEGPU->message_out.setVariable<int>("id", FLAMEGPU->getVariable<int>("id"));
+  FLAMEGPU->message_out.setVariable<float>("x", FLAMEGPU->getVariable<float>("x"));
+  FLAMEGPU->message_out.setVariable<float>("y", FLAMEGPU->getVariable<float>("y"));
+  return ALIVE;
+  }
+"""
+"""
+  predator_follow_prey agent function for predator agents, which reads data from neighbouring prey agents to alter course in pursuit
+"""
+predator_follow_prey = """
+// Agent function
+FLAMEGPU_AGENT_FUNCTION(predator_follow_prey, MsgSpatial2D, MsgNone) {
+  // Agent properties in local register
+  int id = FLAMEGPU->getVariable<int>("id");
+  // Agent position
+  float agent_x = FLAMEGPU->getVariable<float>("x");
+  float agent_y = FLAMEGPU->getVariable<float>("y");
+  float agent_steerx = FLAMEGPU->getVariable<float>("steer_x");
+  float agent_steery = FLAMEGPU->getVariable<float>("steer_y");
+  //Alter velocity to pursue prey agents
+  float closest_prey_distance = FLAMEGPU->environment.getProperty<float>("PRED_PREY_INTERACTION_RADIUS");
+  int can_see_prey = 0;
+  float closest_prey_x = 0.0;
+  float closest_prey_y = 0.0;
+  float message_x = 0.0;
+  float message_y = 0.0;
+  float separation = 0.0;
+
+  // Iterate location messages, accumulating relevant data and counts.
+  for (const auto &message : FLAMEGPU->message_in(agent_x, agent_y)) {
+    message_x = message.getVariable<float>("x");
+    message_y = message.getVariable<float>("y");
+
+    // Check interaction radius
+    separation = vec2Length(agent_x - message_x, agent_y - message_y);
+
+    if (separation < closest_prey_distance) {
+      // Update the percieved closest prey agent
+      closest_prey_x = message_x;
+      closest_prey_y = message_y;
+      closest_prey_distance = separation;
+      can_see_prey = 1
+    }
+  }
+
+  if (can_see_prey) {
+    agent_steerx = closest_prey_x - agent_x;
+    agent_steery = closest_prey_y - agent_y;
+  }
+  FLAMEGPU->setVariable<float>("steer_x", agent_steerx);
+  FLAMEGPU->setVariable<float>("steer_y", agent_steery);
+  return ALIVE;
+}
+"""
+predator_avoidance = """
+// Agent function
+FLAMEGPU_AGENT_FUNCTION(predator_avoidance, MsgSpatial2D, MsgNone) {
+  // Agent properties in local register
+  int id = FLAMEGPU->getVariable<int>("id");
+  // Agent position
+  float agent_x = FLAMEGPU->getVariable<float>("x");
+  float agent_y = FLAMEGPU->getVariable<float>("y");
+  //Alter velocity to avoid fellow predator agents
+  float avoidance_x = 0.0;
+  float avoidance_y = 0.0;
+  float separation = 0.0;
+  float message_x = 0.0;
+  float message_y = 0.0;
+  int message_id = 0;
+  const float SAME_SPECIES_AVOIDANCE_RADIUS = FLAMEGPU->environment.getProperty<float>("SAME_SPECIES_AVOIDANCE_RADIUS");
+
+  // Iterate location messages, accumulating relevant data and counts.
+  for (const auto &message : FLAMEGPU->message_in(agent_x, agent_y)) {
+      
+    message_x = message.getVariable<float>("x");
+    message_y = message.getVariable<float>("y");
+    message_id = message.getVariable<int>("id");
+
+    // Check interaction radius
+    separation = vec2Length(agent_x - message_x, agent_y - message_y);
+
+    if (separation < (SAME_SPECIES_AVOIDANCE_RADIUS) and separation>0.0 and not id==message_id) {
+      avoidance_x += SAME_SPECIES_AVOIDANCE_RADIUS/(separation*(agent_x-message_x));
+      avoidance_y += SAME_SPECIES_AVOIDANCE_RADIUS/(separation*(agent_y-message_y));
+    }
+  }
+
+  float current_steer_x = FLAMEGPU->getVariable<float>("steer_x");
+  float current_steer_y = FLAMEGPU->getVariable<float>("steer_y");
+  FLAMEGPU->setVariable<float>("steer_x", current_steer_x+avoidance_x);
+  FLAMEGPU->setVariable<float>("steer_y", current_steer_y+avoidance_y);
+  return ALIVE;
+}
+"""
+predator_move="""
+FLAMEGPU_AGENT_FUNCTION(predator_move, MsgNone, MsgNone) {
+  //Agent position vector
+  float agent_x = FLAMEGPU->getVariable<float>("x");
+  float agent_y = FLAMEGPU->getVariable<float>("y");
+  float agent_fx = FLAMEGPU->getVariable<float>("fx");
+  float agent_fy = FLAMEGPU->getVariable<float>("fy");
+  float agent_steerx = FLAMEGPU->getVariable<float>("steer_x");
+  float agent_steery = FLAMEGPU->getVariable<float>("steer_y");
+
+  //Adjust the velocity according to the steering velocity
+  agent_fx += agent_steerx;
+  agent_fy += agent_steery;
+
+  //Limit the speed of the avoidance velocity
+  float current_speed = vec2Length(agent_fx, agent_fy);
+  if (current_speed > 1.0) {
+    agent_fx, agent_fy = vec2Normalize(agent_fx, agent_fy);
+  }
+
+  //Integrate the position by applying moving according to the velocity
+  const float DELTA_TIME = FLAMEGPU->environment.getProperty<float>("DELTA_TIME");
+  const float PRED_SPEED_ADVANTAGE = FLAMEGPU->environment.getProperty<float>("PRED_SPEED_ADVANTAGE");
+  agent_x += agent_fx * DELTA_TIME * PRED_SPEED_ADVANTAGE;
+  agent_y += agent_fy * DELTA_TIME * PRED_SPEED_ADVANTAGE;
+
+
+  //Bound the position within the environment 
+  agent_x, agent_y = boundPosition(agent_x, agent_y, FLAMEGPU->environment.getProperty<float>("MIN_POSITION"), FLAMEGPU->environment.getProperty<float>("MAX_POSITION"));
+
+  //Update the agents position and velocity
+  FLAMEGPU->setVariable<float>("x",agent_x);
+  FLAMEGPU->setVariable<float>("y",agent_y);
+  FLAMEGPU->setVariable<float>("fx",agent_fx);
+  FLAMEGPU->setVariable<float>("fy",agent_fy);
+
+  //reduce life by one unit of energy
+  FLAMEGPU->setVariable<int>("life",FLAMEGPU->getVariable<int>("life")-1);
+
+  return 0;
+}
+"""
+predator_eat_or_starve = """
+FLAMEGPU_AGENT_FUNCTION(predator_eat_or_starve, MsgSpatial2D, MsgNone) {
+  int dead = 0;
+  int agent_life = FLAMEGPU->getVariable<int>("life");
+  int agent_id = FLAMEGPU->getVariable<int>("id");
+  int message_id = 0;
+  const int GAIN_FROM_FOOD_PREDATOR = FLAMEGPU->environment.getProperty<int>("GAIN_FROM_FOOD_PREDATOR");
+
+  // Iterate prey eaten messages, accumulating relevant data and counts.
+  for (const auto &message : FLAMEGPU->message_in(agent_x, agent_y)) {
+    message_id = message.getVariable<int>("id");
+    if (agent_id == message_id) {
+      agent_life += GAIN_FROM_FOOD_PREDATOR;
+    }
+  }
+
+  //if one or more predators were within killing distance then notify the nearest predator that it has eaten this predator via a predator eaten message.
+  if (agent_life < 1) {
+    dead = 1;
+  }
+  else {
+   FLAMEGPU->setVariable<int>("life", agent_life);
+  }
+
+  //return eaten value to remove dead (eaten == 1) agents from the simulation
+  return dead;
+}
+"""
+"""
+  GRASS
+  grass_output_location_data agent function for grass agents, which outputs publicly visible properties to a message list
+"""
+grass_output_location_data = """
+FLAMEGPU_AGENT_FUNCTION(grass_output_location_data, MsgNone, MsgSpatial2D) {
+  // Output each grass agent's location (and other visible properties if implemented)
+  FLAMEGPU->message_out.setVariable<int>("id", FLAMEGPU->getVariable<int>("id"));
+  FLAMEGPU->message_out.setVariable<float>("x", FLAMEGPU->getVariable<float>("x"));
+  FLAMEGPU->message_out.setVariable<float>("y", FLAMEGPU->getVariable<float>("y"));
+  return ALIVE;
+  }
+"""
+grass_eaten = """
+FLAMEGPU_AGENT_FUNCTION(grass_eaten, MsgSpatial2D, MsgSpatial2D) {
+  int eaten = 0;
+  int prey_id = -1;
+  float closest_prey = FLAMEGPU->environment.getProperty<float>("GRASS_EAT_DISTANCE");
+  float agent_x = FLAMEGPU->getVariable<float>("x");
+  float agent_y = FLAMEGPU->getVariable<float>("y");
+  float message_x = 0.0;
+  float message_y = 0.0;
+  int message_id = 0;
+  float distance = 0.0;
+
+  // Iterate location messages, accumulating relevant data and counts.
+  for (const auto &message : FLAMEGPU->message_in(agent_x, agent_y)) {
+    message_x = message.getVariable<float>("x");
+    message_y = message.getVariable<float>("y");
+    message_id = message.getVariable<int>("id");
+    distance = vec2Length(agent_x - message_x, agent_y - message_y);
+    if (distance < closest_prey) {
+      prey_id = message_id;
+      closest_prey = distance;
+      eaten = 1;
+    }
+  }
+
+  //if one or more preys were within killing distance then notify the nearest prey that it has eaten this grass via a grass eaten message.
+  if (eaten) {
+    FLAMEGPU->message_out.setVariable<int>("prey_id", prey_id);
+    FLAMEGPU->message_out.setVariable<float>("x", agent_x);
+    FLAMEGPU->message_out.setVariable<float>("y", agent_y);
+    FLAMEGPU->setVariable<float>("typ", 5.0);
+    FLAMEGPU->setVariable<int>("available", 0);
+  }
+
+  return 0;
+}
+"""
+grass_growth = """
+FLAMEGPU_AGENT_FUNCTION(grass_growth, MsgNone, MsgNone) {
+  int agent_dead_cycles = FLAMEGPU->getVariable<int>("dead_cycles");
+  int agent_availability = FLAMEGPU->getVariable<int>("availabile");
+  const int GRASS_REGROW_CYCLES = FLAMEGPU->environment.getProperty<int>("GRASS_REGROW_CYCLES");
+  
+  if (agent_dead_cycles>=GRASS_REGROW_CYCLES) {
+    FLAMEGPU->setVariable<float>("typ", 2.0);
+    FLAMEGPU->setVariable<int>("available", 1);
+    FLAMEGPU->setVariable<int>("dead_cycles", 0);
+  }
+  if (agent_availability==0) {
+    FLAMEGPU->setVariable<int>("dead_cycles", agent_dead_cycles+1);
+  }
+
+  return 0;
+}
 """
 
-
-model = pyflamegpu.ModelDescription("Ensemble_Boids_BruteForce");
+model = pyflamegpu.ModelDescription("Prey_Predator_Grass");
 
 
 """
@@ -298,248 +684,322 @@ model = pyflamegpu.ModelDescription("Ensemble_Boids_BruteForce");
 """
 env = model.Environment();
 # Population size to generate, if no agents are loaded from disk
-env.newPropertyUInt("POPULATION_TO_GENERATE", POPULATION_SIZE);
+env.newPropertyInt("PREY_POPULATION_TO_GENERATE", PREY_POPULATION_SIZE);
+env.newPropertyInt("PREDATOR_POPULATION_TO_GENERATE", PREDATOR_POPULATION_SIZE);
+env.newPropertyInt("GRASS_POPULATION_TO_GENERATE", GRASS_POPULATION_SIZE);
+env.newPropertyInt("CURRENT_ID", 0);
 
 # Number of steps to simulate
 env.newPropertyUInt("STEPS", STEPS);
 
 # Environment Bounds
-env.newPropertyFloat("MIN_POSITION", -0.5);
-env.newPropertyFloat("MAX_POSITION", +0.5);
+env.newPropertyFloat("MIN_POSITION", -1.0);
+env.newPropertyFloat("MAX_POSITION", +1.0);
+env.newPropertyFloat("BOUNDS_WIDTH", 2.0);
 
-# Initialisation parameter(s)
-env.newPropertyFloat("MAX_INITIAL_SPEED", 1.0);
-env.newPropertyFloat("MIN_INITIAL_SPEED", 0.01);
+# Interaction Radii
+env.newPropertyFloat("PI", 3.1415);
+env.newPropertyFloat("PRED_PREY_INTERACTION_RADIUS", 0.1);
+env.newPropertyFloat("PREY_GROUP_COHESION_RADIUS", 0.2);
+env.newPropertyFloat("SAME_SPECIES_AVOIDANCE_RADIUS", 0.035);
+env.newPropertyFloat("GRASS_EAT_DISTANCE", 0.02);
+env.newPropertyFloat("PRED_KILL_DISTANCE", 0.02);
 
-# Interaction radius
-env.newPropertyFloat("INTERACTION_RADIUS", 0.1);
-env.newPropertyFloat("SEPARATION_RADIUS", 0.005);
+# Other globals
+env.newPropertyFloat("DELTA_TIME", 0.001);
+env.newPropertyFloat("PRED_SPEED_ADVANTAGE", 2.0);
+env.newPropertyFloat("MIN_SPEED", -1.0);
+env.newPropertyFloat("MAX_SPEED", +1.0);
 
-# Global Scalers
-env.newPropertyFloat("TIME_SCALE", 0.0005);
-env.newPropertyFloat("GLOBAL_SCALE", 0.15);
-
-# Rule scalers
-env.newPropertyFloat("STEER_SCALE", 0.65);
-env.newPropertyFloat("COLLISION_SCALE", 0.75);
-env.newPropertyFloat("MATCH_SCALE", 1.25);
+#Parameter globals
+env.newPropertyFloat("REPRODUCE_PREY_PROB", 0.05);
+env.newPropertyFloat("REPRODUCE_PREDATOR_PROB", 0.03);
+env.newPropertyInt("GAIN_FROM_FOOD_PREDATOR", 75);
+env.newPropertyInt("GAIN_FROM_FOOD_PREY", 50);
+env.newPropertyInt("GRASS_REGROW_CYCLES", 100);
 
 """
-  Location message
+  Location messages
 """
-message = model.newMessageSpatial3D("location");
+grass_location_message = model.newMessageSpatial2D("grass_location_message");
 # Set the range and bounds.
-message.setRadius(env.getPropertyFloat("INTERACTION_RADIUS"));
-message.setMin(env.getPropertyFloat("MIN_POSITION"), env.getPropertyFloat("MIN_POSITION"), env.getPropertyFloat("MIN_POSITION"));
-message.setMax(env.getPropertyFloat("MAX_POSITION"), env.getPropertyFloat("MAX_POSITION"), env.getPropertyFloat("MAX_POSITION"));
+grass_location_message.setRadius(env.getPropertyFloat("PRED_PREY_INTERACTION_RADIUS"));
+grass_location_message.setMin(env.getPropertyFloat("MIN_POSITION"), env.getPropertyFloat("MIN_POSITION"));
+grass_location_message.setMax(env.getPropertyFloat("MAX_POSITION"), env.getPropertyFloat("MAX_POSITION"));
 # A message to hold the location of an agent.
-message.newVariableInt("id");
-# X Y Z are implicit.
-# message.newVariable<float>("x");
-# message.newVariable<float>("y");
-# message.newVariable<float>("z");
-message.newVariableFloat("fx");
-message.newVariableFloat("fy");
-message.newVariableFloat("fz");
+grass_location_message.newVariableInt("id");
+
+prey_location_message = model.newMessageSpatial2D("prey_location_message");
+# Set the range and bounds.
+prey_location_message.setRadius(env.getPropertyFloat("PRED_PREY_INTERACTION_RADIUS"));
+prey_location_message.setMin(env.getPropertyFloat("MIN_POSITION"), env.getPropertyFloat("MIN_POSITION"));
+prey_location_message.setMax(env.getPropertyFloat("MAX_POSITION"), env.getPropertyFloat("MAX_POSITION"));
+# A message to hold the location of an agent.
+prey_location_message.newVariableInt("id");
+
+predator_location_message = model.newMessageSpatial2D("predator_location_message");
+# Set the range and bounds.
+predator_location_message.setRadius(env.getPropertyFloat("PRED_PREY_INTERACTION_RADIUS"));
+predator_location_message.setMin(env.getPropertyFloat("MIN_POSITION"), env.getPropertyFloat("MIN_POSITION"));
+predator_location_message.setMax(env.getPropertyFloat("MAX_POSITION"), env.getPropertyFloat("MAX_POSITION"));
+# A message to hold the location of an agent.
+predator_location_message.newVariableInt("id");
+
+"""
+  Eaten messages
+"""
+prey_eaten_message = model.newMessageSpatial2D("prey_eaten_message");
+# Set the range and bounds.
+prey_eaten_message.setRadius(env.getPropertyFloat("PRED_PREY_INTERACTION_RADIUS"));
+prey_eaten_message.setMin(env.getPropertyFloat("MIN_POSITION"), env.getPropertyFloat("MIN_POSITION"));
+prey_eaten_message.setMax(env.getPropertyFloat("MAX_POSITION"), env.getPropertyFloat("MAX_POSITION"));
+# A message to hold the eaten of an agent.
+prey_eaten_message.newVariableInt("predator_id");
+
+grass_eaten_message = model.newMessageSpatial2D("grass_eaten_message");
+# Set the range and bounds.
+grass_eaten_message.setRadius(env.getPropertyFloat("PRED_PREY_INTERACTION_RADIUS"));
+grass_eaten_message.setMin(env.getPropertyFloat("MIN_POSITION"), env.getPropertyFloat("MIN_POSITION"));
+grass_eaten_message.setMax(env.getPropertyFloat("MAX_POSITION"), env.getPropertyFloat("MAX_POSITION"));
+# A message to hold the eaten of an agent.
+grass_eaten_message.newVariableInt("prey_id");
     
 """
-  Boid agent
+  Prey agent
 """
-agent = model.newAgent("Boid");
-agent.newVariableInt("id");
-agent.newVariableFloat("x");
-agent.newVariableFloat("y");
-agent.newVariableFloat("z");
-agent.newVariableFloat("fx");
-agent.newVariableFloat("fy");
-agent.newVariableFloat("fz");
-agent.newRTCFunction("outputdata", outputdata).setMessageOutput("location");
-agent.newRTCFunction("inputdata", inputdata).setMessageInput("location");
+prey_agent = model.newAgent("Prey");
+prey_agent.newVariableInt("id");
+prey_agent.newVariableFloat("x");
+prey_agent.newVariableFloat("y");
+prey_agent.newVariableFloat("fx");
+prey_agent.newVariableFloat("fy");
+prey_agent.newVariableFloat("typ");
+prey_agent.newVariableFloat("steer_x");
+prey_agent.newVariableFloat("steer_y");
+prey_agent.newVariableInt("life");
+prey_agent.newRTCFunction("prey_output_location_data", prey_output_location_data).setMessageOutput("prey_location_message");
+prey_agent.newRTCFunction("prey_avoid_predators", prey_avoid_predators).setMessageInput("predator_location_message");
+prey_agent.newRTCFunction("prey_flock", prey_flock).setMessageInput("prey_location_message");
+prey_agent.newRTCFunction("prey_move", prey_move);
+prey_agent.newRTCFunction("prey_eaten", prey_eaten).setMessageInput("predator_location_message");
+prey_agent.getFunction("prey_eaten").setMessageOutput("prey_eaten_message");
+prey_agent.newRTCFunction("prey_eat_or_starve", prey_eat_or_starve).setMessageInput("grass_eaten_message");
+
+"""
+  Predator agent
+"""
+predator_agent = model.newAgent("Predator");
+predator_agent.newVariableInt("id");
+predator_agent.newVariableFloat("x");
+predator_agent.newVariableFloat("y");
+predator_agent.newVariableFloat("fx");
+predator_agent.newVariableFloat("fy");
+predator_agent.newVariableFloat("typ");
+predator_agent.newVariableFloat("steer_x");
+predator_agent.newVariableFloat("steer_y");
+predator_agent.newVariableInt("life");
+predator_agent.newRTCFunction("predator_output_location_data", predator_output_location_data).setMessageOutput("predator_location_message");
+predator_agent.newRTCFunction("predator_follow_prey", predator_follow_prey).setMessageInput("prey_location_message");
+predator_agent.newRTCFunction("predator_avoidance", predator_avoidance).setMessageInput("predator_location_message");
+predator_agent.newRTCFunction("predator_move", predator_move);
+predator_agent.newRTCFunction("predator_eat_or_starve", predator_eat_or_starve).setMessageInput("prey_eaten_message");
 
 
-# Add init function for creating boid population with random initial location
-class initPopulation(pyflamegpu.HostFunctionCallback):
-    def run(self,FLAMEGPU):
-        populationSize = FLAMEGPU.environment.getPropertyUInt("POPULATION_TO_GENERATE");
-        min_pos = FLAMEGPU.environment.getPropertyFloat("MIN_POSITION");
-        max_pos = FLAMEGPU.environment.getPropertyFloat("MAX_POSITION");
-        min_speed = FLAMEGPU.environment.getPropertyFloat("MIN_INITIAL_SPEED");
-        max_speed = FLAMEGPU.environment.getPropertyFloat("MAX_INITIAL_SPEED");
-        for i in range(populationSize):
-            instance = FLAMEGPU.newAgent("Boid");
-            instance.setVariableInt("id", i);
-            instance.setVariableFloat("x", random.uniform(min_pos, max_pos));
-            instance.setVariableFloat("y", random.uniform(min_pos, max_pos));
-            instance.setVariableFloat("z", random.uniform(min_pos, max_pos));
-            fx = random.uniform(-1, 1);
-            fy = random.uniform(-1, 1);
-            fz = random.uniform(-1, 1);
-            fmagnitude = random.uniform(min_speed, max_speed);
-            vec3Normalize(fx, fy, fz);
-            vec3Mult(fx, fy, fz, fmagnitude);
-            instance.setVariableFloat("fx", fx);
-            instance.setVariableFloat("fy", fy);
-            instance.setVariableFloat("fz", fz);
-        return
+"""
+  Grass agent
+"""
+grass_agent = model.newAgent("Grass");
+grass_agent.newVariableInt("id");
+grass_agent.newVariableFloat("x");
+grass_agent.newVariableFloat("y");
+grass_agent.newVariableFloat("typ");
+grass_agent.newVariableInt("dead_cycles");
+grass_agent.newVariableInt("available");
+grass_agent.newRTCFunction("grass_output_location_data", grass_output_location_data).setMessageOutput("grass_location_message");
+grass_agent.newRTCFunction("grass_eaten", grass_eaten).setMessageInput("prey_location_message");
+grass_agent.getFunction("grass_eaten").setMessageOutput("grass_eaten_message");
+grass_agent.newRTCFunction("grass_growth", grass_growth);
 
+# # Add init function for creating boid population with random initial location
+# class initPopulation(pyflamegpu.HostFunctionCallback):
+#     def run(self,FLAMEGPU):
+#         populationSize = FLAMEGPU.environment.getPropertyUInt("POPULATION_TO_GENERATE");
+#         min_pos = FLAMEGPU.environment.getPropertyFloat("MIN_POSITION");
+#         max_pos = FLAMEGPU.environment.getPropertyFloat("MAX_POSITION");
+#         min_speed = FLAMEGPU.environment.getPropertyFloat("MIN_INITIAL_SPEED");
+#         max_speed = FLAMEGPU.environment.getPropertyFloat("MAX_INITIAL_SPEED");
+#         for i in range(populationSize):
+#             instance = FLAMEGPU.newAgent("Boid");
+#             instance.setVariableInt("id", i);
+#             instance.setVariableFloat("x", random.uniform(min_pos, max_pos));
+#             instance.setVariableFloat("y", random.uniform(min_pos, max_pos));
+#             instance.setVariableFloat("z", random.uniform(min_pos, max_pos));
+#             fx = random.uniform(-1, 1);
+#             fy = random.uniform(-1, 1);
+#             fz = random.uniform(-1, 1);
+#             fmagnitude = random.uniform(min_speed, max_speed);
+#             vec3Normalize(fx, fy, fz);
+#             vec3Mult(fx, fy, fz, fmagnitude);
+#             instance.setVariableFloat("fx", fx);
+#             instance.setVariableFloat("fy", fy);
+#             instance.setVariableFloat("fz", fz);
+#         return
+# Add init function for creating prey population with random initial location
+class initPreyPopulation(pyflamegpu.HostFunctionCallback):
+  def run(self,FLAMEGPU):
+    populationSize = FLAMEGPU.environment.getPropertyInt("PREY_POPULATION_TO_GENERATE");
+    min_pos = FLAMEGPU.environment.getPropertyFloat("MIN_POSITION");
+    max_pos = FLAMEGPU.environment.getPropertyFloat("MAX_POSITION");
+    min_speed = FLAMEGPU.environment.getPropertyFloat("MIN_SPEED");
+    max_speed = FLAMEGPU.environment.getPropertyFloat("MAX_SPEED");
+    current_id = FLAMEGPU.environment.getPropertyInt("CURRENT_ID");
+    for i in range(populationSize):
+      instance = FLAMEGPU.newAgent("Prey");
+      instance.setVariableInt("id", current_id+i);
+      instance.setVariableFloat("x", random.uniform(min_pos, max_pos));
+      instance.setVariableFloat("y", random.uniform(min_pos, max_pos));
+      instance.setVariableFloat("typ", 1.0);
+      instance.setVariableFloat("fx", random.uniform(min_speed, max_speed));
+      instance.setVariableFloat("fy", random.uniform(min_speed, max_speed));
+      instance.setVariableFloat("steer_x", 0.0);
+      instance.setVariableFloat("steer_y", 0.0);
+      instance.setVariableInt("life", random.randint(200,5000));
+    FLAMEGPU.environment.setVariableInt("CURRENT_ID", current_id+i)
+    return
+# Add init function for creating predator population with random initial location
+class initPredatorPopulation(pyflamegpu.HostFunctionCallback):
+  def run(self,FLAMEGPU):
+    populationSize = FLAMEGPU.environment.getPropertyInt("PREDATOR_POPULATION_TO_GENERATE");
+    min_pos = FLAMEGPU.environment.getPropertyFloat("MIN_POSITION");
+    max_pos = FLAMEGPU.environment.getPropertyFloat("MAX_POSITION");
+    min_speed = FLAMEGPU.environment.getPropertyFloat("MIN_SPEED");
+    max_speed = FLAMEGPU.environment.getPropertyFloat("MAX_SPEED");
+    current_id = FLAMEGPU.environment.getPropertyInt("CURRENT_ID");
+    for i in range(populationSize):
+      instance = FLAMEGPU.newAgent("Predator");
+      instance.setVariableInt("id", current_id+i);
+      instance.setVariableFloat("x", random.uniform(min_pos, max_pos));
+      instance.setVariableFloat("y", random.uniform(min_pos, max_pos));
+      instance.setVariableFloat("typ", 0.0);
+      instance.setVariableFloat("fx", random.uniform(min_speed, max_speed));
+      instance.setVariableFloat("fy", random.uniform(min_speed, max_speed));
+      instance.setVariableFloat("steer_x", 0.0);
+      instance.setVariableFloat("steer_y", 0.0);
+      instance.setVariableInt("life", random.randint(200,5000));
+    FLAMEGPU.environment.setVariableInt("CURRENT_ID", current_id+i)
+    return
+# Add init function for creating grass population with random initial location
+class initGrassPopulation(pyflamegpu.HostFunctionCallback):
+  def run(self,FLAMEGPU):
+    populationSize = FLAMEGPU.environment.getPropertyInt("GRASS_POPULATION_TO_GENERATE");
+    min_pos = FLAMEGPU.environment.getPropertyFloat("MIN_POSITION");
+    max_pos = FLAMEGPU.environment.getPropertyFloat("MAX_POSITION");
+    current_id = FLAMEGPU.environment.getPropertyInt("CURRENT_ID");
+    for i in range(populationSize):
+      instance = FLAMEGPU.newAgent("grass");
+      instance.setVariableInt("id", current_id+i);
+      instance.setVariableFloat("x", random.uniform(min_pos, max_pos));
+      instance.setVariableFloat("y", random.uniform(min_pos, max_pos));
+      instance.setVariableFloat("typ", 2.0);
+      instance.setVariableInt("dead_cycles", 0);
+      instance.setVariableInt("available", 1);
+    FLAMEGPU.environment.setVariableInt("CURRENT_ID", current_id+i)
+    return
 
-# Add function callback to INIT function for population generation
-initialPopulation = initPopulation();
-model.addInitFunctionCallback(initialPopulation);
-
+# Add function callback to INIT functions for population generation
+initialPreyPopulation = initPreyPopulation();
+model.addInitFunctionCallback(initialPreyPopulation);
+initialPredatorPopulation = initPredatorPopulation();
+model.addInitFunctionCallback(initialPredatorPopulation);
+initialGrassPopulation = initGrassPopulation();
+model.addInitFunctionCallback(initialGrassPopulation);
 
 """
   Control flow
 """    
 # Layer #1
-model.newLayer().addAgentFunction("Boid", "outputdata");
+model.newLayer("L1").addAgentFunction("Prey", "prey_output_location_data");
+model.Layer("L1").addAgentFunction("Predator", "predator_output_location_data");
+model.Layer("L1").addAgentFunction("Grass", "grass_output_location_data");
 # Layer #2
-model.newLayer().addAgentFunction("Boid", "inputdata");
+model.newLayer("L2").addAgentFunction("Predator", "predator_follow_prey");
+model.Layer("L2").addAgentFunction("Prey", "prey_avoid_predators");
+# Layer #3
+model.newLayer("L3").addAgentFunction("Prey", "prey_flock");
+model.Layer("L3").addAgentFunction("Predator", "predator_avoidance");
+# Layer #4
+model.newLayer("L4").addAgentFunction("Prey", "prey_move");
+model.Layer("L4").addAgentFunction("Predator", "predator_move");
+# Layer #5
+model.newLayer("L5").addAgentFunction("Grass", "grass_eaten");
+model.Layer("L5").addAgentFunction("Prey", "prey_eaten");
+# Layer #6
+model.newLayer("L6").addAgentFunction("Prey", "prey_eat_or_starve");
+model.Layer("L6").addAgentFunction("Predator", "predator_eat_or_starve");
+# Layer #7
+model.newLayer("L7").addAgentFunction("Grass", "grass_growth");
 
 """
   Create Run Plan Vector
 """   
-run_plan_vector = pyflamegpu.RunPlanVec(model, ENSEMBLE_RUNS);
-run_plan_vector.setSteps(env.getPropertyUInt("STEPS"));
-simulation_seed = random.randint(0,99999);
-run_plan_vector.setRandomSimulationSeed(simulation_seed,1000);
+# run_plan_vector = pyflamegpu.RunPlanVec(model, ENSEMBLE_RUNS);
+# run_plan_vector.setSteps(env.getPropertyUInt("STEPS"));
+# simulation_seed = random.randint(0,99999);
+# run_plan_vector.setRandomSimulationSeed(simulation_seed,1000);
 
 
+"""
+  Create Model Runner
+"""  
+if ENSEMBLE: 
+    simulation = pyflamegpu.CUDAEnsemble(model);
+else:
+    simulation = pyflamegpu.CUDASimulation(model);
 
+"""
+  Create Visualisation
+"""
+if pyflamegpu.VISUALISATION and VISUALISATION and not ENSEMBLE:
+    visualisation = simulation.getVisualisation();
+    # Configure vis
+    envWidth = env.getPropertyFloat("MAX_POSITION") - env.getPropertyFloat("MIN_POSITION");
+    INIT_CAM = env.getPropertyFloat("MAX_POSITION") * 1.25;
+    visualisation.setInitialCameraLocation(INIT_CAM, INIT_CAM, INIT_CAM);
+    visualisation.setCameraSpeed(0.002 * envWidth);
+    circ_prey_agt = visualisation.addAgent("Prey");
+    circ_predator_agt = visualisation.addAgent("Predator");
+    circ_grass_agt = visualisation.addAgent("Grass");
+    # Position vars are named x, y, z; so they are used by default
+    circ_prey_agt.setModel(pyflamegpu.ICOSPHERE);
+    circ_predator_agt.setModel(pyflamegpu.ICOSPHERE);
+    circ_grass_agt.setModel(pyflamegpu.ICOSPHERE);
+    circ_prey_agt.setModelScale(env.getPropertyFloat("PRED_PREY_INTERACTION_RADIUS"));
+    circ_predator_agt.setModelScale(env.getPropertyFloat("PRED_PREY_INTERACTION_RADIUS"));
+    circ_grass_agt.setModelScale(env.getPropertyFloat("PRED_PREY_INTERACTION_RADIUS"));
 
+    visualisation.activate();
 
+"""
+  Initialise Model
+"""
+simulation.initialise(sys.argv);
 
+"""
+  Execution
+"""
+if ENSEMBLE:
+    simulation.simulate(run_plan_vector);
+else:
+    simulation.simulate();
 
+"""
+  Export Pop
+"""
+# simulation.exportData("end.xml");
 
-
-
-
-
-test = exp.InitialStateGenerator();
-
-test1 = test.setGlobalFloat("test_var",0);
-
-
-test2 = exp.AgentPopulation("Boid");
-
-test3 = test2.setPopSize(10);
-
-
-
-
-boid_population = exp.AgentPopulation("Boid");
-boid_population.setPopSizeRandom((256,1024));
-boid_population.setVariableRandomPerAgent("x",(-1.0,1.0));
-boid_population.setVariableRandomPerAgent("y",(-1.0,1.0));
-boid_population.setVariableRandomPerAgent("z",(-1.0,1.0));
-boid_population.setVariableRandomPerAgent("fx",(-1.0,1.0));
-boid_population.setVariableRandomPerAgent("fy",(-1.0,1.0));
-boid_population.setVariableRandomPerAgent("fz",(-1.0,1.0));
-
-
-initial_states = exp.InitialStateGenerator();
-initial_states.setGlobalRandom("test_global",(0,100));
-initial_states.addAgentPopulation(boid_population);
-
-
-experiment = exp.Experiment("test_experiment");
-experiment.setModel(model);
-experiment.initialStateGenerator(initial_states);
-experiment.setSimulationSteps(10);
-experiment.setRuns(3);
-
-
-#experiment.begin();
-
-
-print(experiment.generator.agent_list[0].name);
-
-
-
-search = exp.Search();
-search.GA();
-
-
-
-
-
-
-
-
-
-
-
-
-
-# """
-#   Create Model Runner
-# """  
-# if ENSEMBLE: 
-#     simulation = pyflamegpu.CUDAEnsemble(model);
-# else:
-#     simulation = pyflamegpu.CUDASimulation(model);
-
-# # Create and configure logging details 
-# logging_config = pyflamegpu.LoggingConfig(model);
-# agent_log = logging_config.agent("Boid");
-# agent_log.logMeanFloat("x");
-# agent_log.logMeanFloat("y");
-# agent_log.logMeanFloat("z");
-# agent_log.logMeanFloat("fx");
-# agent_log.logMeanFloat("fy");
-# agent_log.logMeanFloat("fz");
-# # agent_log.logStandardDevFloat("x");
-# # agent_log.logStandardDevFloat("y");
-# # agent_log.logStandardDevFloat("z");
-# agent_log.logStandardDevFloat("fx");
-# agent_log.logStandardDevFloat("fy");
-# agent_log.logStandardDevFloat("fz");
-# step_log = pyflamegpu.StepLoggingConfig(logging_config);
-# step_log.setFrequency(1);
-
-
-# simulation.setStepLog(step_log);
-# simulation.setExitLog(logging_config)
-
-
-# """
-#   Create Visualisation
-# """
-# if pyflamegpu.VISUALISATION and VISUALISATION and not ENSEMBLE:
-#     visualisation = simulation.getVisualisation();
-#     # Configure vis
-#     envWidth = env.getPropertyFloat("MAX_POSITION") - env.getPropertyFloat("MIN_POSITION");
-#     INIT_CAM = env.getPropertyFloat("MAX_POSITION") * 1.25;
-#     visualisation.setInitialCameraLocation(INIT_CAM, INIT_CAM, INIT_CAM);
-#     visualisation.setCameraSpeed(0.002 * envWidth);
-#     circ_agt = visualisation.addAgent("Boid");
-#     # Position vars are named x, y, z; so they are used by default
-#     circ_agt.setModel(pyflamegpu.ICOSPHERE);
-#     circ_agt.setModelScale(env.getPropertyFloat("SEPARATION_RADIUS"));
-
-#     visualisation.activate();
-
-# """
-#   Initialise Model
-# """
-# simulation.initialise(sys.argv);
-
-# """
-#   Execution
-# """
-# if ENSEMBLE:
-#     simulation.simulate(run_plan_vector);
-# else:
-#     simulation.simulate();
-
-# """
-#   Export Pop
-# """
-# # simulation.exportData("end.xml");
-
-# # Join Visualisation
-# if pyflamegpu.VISUALISATION and VISUALISATION and not ENSEMBLE:
-#     visualisation.join();
+# Join Visualisation
+if pyflamegpu.VISUALISATION and VISUALISATION and not ENSEMBLE:
+    visualisation.join();
 
 
 
