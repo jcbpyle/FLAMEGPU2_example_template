@@ -15,7 +15,7 @@ GRASS_POPULATION_SIZE = 200;
 #STEPS = 100;
 STEPS = 2;
 # Change to false if pyflamegpu has not been built with visualisation support
-VISUALISATION = True;
+VISUALISATION = False;
 
 """
   FLAME GPU 2 implementation of the Predator, Prey and Grass model, using spatial3D messaging.
@@ -1004,6 +1004,8 @@ agent_log.logStandardDevFloat("fx");
 agent_log.logStandardDevFloat("fy");
 step_log = pyflamegpu.StepLoggingConfig(logging_config);
 step_log.setFrequency(1);
+simulation.setStepLog(step_log);
+simulation.setExitLog(logging_config)
 
 """
   Create Visualisation
@@ -1058,9 +1060,6 @@ if ENSEMBLE:
 else:
     logs = simulation.getRunLog();
 
-
-simulation.setStepLog(step_log);
-simulation.setExitLog(logging_config)
 
 if ENSEMBLE:
     positions_mean = [None]*ENSEMBLE_RUNS
