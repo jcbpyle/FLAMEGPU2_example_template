@@ -3,11 +3,12 @@ import sys, random, math
 import seaborn as sns
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
-#import experiment_generator as exp
+import experiment_generator as exp
 sns.set()
 
 # Set whether to run single model or ensemble, agent population size, and simulation steps 
-ENSEMBLE = True;
+PARAMETER_EXPERIMENT = True
+ENSEMBLE = False;
 ENSEMBLE_RUNS = 3;
 PREY_POPULATION_SIZE = 64;
 PREDATOR_POPULATION_SIZE = 10;
@@ -15,7 +16,7 @@ GRASS_POPULATION_SIZE = 200;
 #STEPS = 100;
 STEPS = 40;
 # Change to false if pyflamegpu has not been built with visualisation support
-VISUALISATION = False;
+VISUALISATION = True;
 
 """
   FLAME GPU 2 implementation of the Predator, Prey and Grass model, using spatial3D messaging.
@@ -1154,7 +1155,33 @@ if ENSEMBLE:
   run_plan_vector.setRandomSimulationSeed(simulation_seed,1000);
   simulation = pyflamegpu.CUDAEnsemble(model);
 else:
-  simulation = pyflamegpu.CUDASimulation(model);
+  if PARAMETER_EXPERIMENT:
+    experiment_initial_state_generator = exp.InitialStateGenerator();
+    prey_population = exp.AgentPopulation("Prey");
+    predator_population = exp.AgentPopulation("Predator");
+    grass_population = exp.AgentPopulation("Grass");
+
+    prey_population.setPopSizeRandom((64,256));
+    prey_population.setVariableRandomPerAgent("x",(-1.0,1.0));
+    prey_population.setVariableRandomPerAgent("y",(-1.0,1.0));
+    prey_population.setVariableRandomPerAgent("fx",(-1.0,1.0));
+    prey_population.setVariableRandomPerAgent("fy",(-1.0,1.0));
+    prey_population.setVariableFloat("steer_x",(-1.0,1.0));
+    prey_population.setVariableFloat("steer_y",(-1.0,1.0));
+    prey_population.setVariableRandomPerAgent("fy",(-1.0,1.0));
+
+    predator_population.setPopSizeRandom((32,128));
+    predator_population.setVariableRandomPerAgent("x",(-1.0,1.0));
+    predator_population.setVariableRandomPerAgent("y",(-1.0,1.0));
+    predator_population.setVariableRandomPerAgent("fx",(-1.0,1.0));
+    predator_population.setVariableRandomPerAgent("fy",(-1.0,1.0));
+
+    grass_population.setPopSizeRandom((256,1024));
+    grass_population.setVariableRandomPerAgent("x",(-1.0,1.0));
+    grass_population.setVariableRandomPerAgent("y",(-1.0,1.0));
+    simulation = None;
+  else:
+    simulation = pyflamegpu.CUDASimulation(model);
 
 simulation.setStepLog(step_log);
 simulation.setExitLog(logging_config)
@@ -1162,7 +1189,7 @@ simulation.setExitLog(logging_config)
 """
   Create Visualisation
 """
-if pyflamegpu.VISUALISATION and VISUALISATION and not ENSEMBLE:
+if pyflamegpu.VISUALISATION and VISUALISATION and not ENSEMBLE and not PARMATER_EXPERIMENT:
     visualisation = simulation.getVisualisation();
     # Configure vis
     envWidth = env.getPropertyFloat("MAX_POSITION") - env.getPropertyFloat("MIN_POSITION");
@@ -1286,22 +1313,22 @@ if ENSEMBLE:
 
 
     #Print warning data
-    print("Agent counts per step per ensemble run")
-    for j in range(len(agent_counts)):
-      for k in range(len(agent_counts[j])):
-        print(agent_counts[j][k])
-    print()
-    print("Predator kill distance environment variable (cut to 9 steps/40 for readability)")
-    for l in range(len(pred_kill)):
-      print(pred_kill[l][:10])
-    print()
-    print("Min speed environment variable (cut to 9 steps/40 for readability)")
-    for m in range(len(min_speed)):
-      print(min_speed[m][:10])
-    print()
-    print("Grass eat distance environment variable (cut to 9 steps/40 for readability) - No curve warning")
-    for n in range(len(grass_eat)):
-      print(grass_eat[n][:10])
+    # print("Agent counts per step per ensemble run")
+    # for j in range(len(agent_counts)):
+    #   for k in range(len(agent_counts[j])):
+    #     print(agent_counts[j][k])
+    # print()
+    # print("Predator kill distance environment variable (cut to 9 steps/40 for readability)")
+    # for l in range(len(pred_kill)):
+    #   print(pred_kill[l][:10])
+    # print()
+    # print("Min speed environment variable (cut to 9 steps/40 for readability)")
+    # for m in range(len(min_speed)):
+    #   print(min_speed[m][:10])
+    # print()
+    # print("Grass eat distance environment variable (cut to 9 steps/40 for readability) - No curve warning")
+    # for n in range(len(grass_eat)):
+    #   print(grass_eat[n][:10])
     #print("grass eat distance environment property",grass_eat);
     #print("current_id environment property",current_id);
 
@@ -1386,7 +1413,7 @@ else:
         predator_agent_counts[counter] = predator_agents.getCount();
         grass_agent_counts[counter] = grass_agents.getCount();
         counter+=1;
-    print()
-    print("Agent counts per step")
-    for j in range(len(steps)):
-      print("step",j,"prey",prey_agent_counts[j],"predators",predator_agent_counts[j],"grass",grass_agent_counts[j]) 
+    # print()
+    # print("Agent counts per step")
+    # for j in range(len(steps)):
+    #   print("step",j,"prey",prey_agent_counts[j],"predators",predator_agent_counts[j],"grass",grass_agent_counts[j]) 
