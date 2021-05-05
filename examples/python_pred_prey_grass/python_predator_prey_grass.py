@@ -8,14 +8,14 @@ sns.set()
 
 # Set whether to run single model or ensemble, agent population size, and simulation steps 
 ENSEMBLE = False;
-ENSEMBLE_RUNS = 1;
+ENSEMBLE_RUNS = 3;
 PREY_POPULATION_SIZE = 64;
 PREDATOR_POPULATION_SIZE = 10;
 GRASS_POPULATION_SIZE = 200;
 #STEPS = 100;
-STEPS = 2;
+STEPS = 40;
 # Change to false if pyflamegpu has not been built with visualisation support
-VISUALISATION = False;
+VISUALISATION = True;
 
 """
   FLAME GPU 2 implementation of the Predator, Prey and Grass model, using spatial3D messaging.
@@ -231,7 +231,7 @@ FLAMEGPU_AGENT_FUNCTION(prey_output_location_data, MsgNone, MsgSpatial2D) {
   }
 """
 """
-  prey_avoid_predators agent function for Prey agents, which reads data from neighbouring predator agents to alter course away
+  prey_avoid_predators agent function for Prey agents, which reads data from neighbouring predator agents to alter course as to avoid them
 """
 prey_avoid_predators = """
 FLAMEGPU_HOST_DEVICE_FUNCTION float vec2Length(const float x, const float y) {
@@ -272,6 +272,9 @@ FLAMEGPU_AGENT_FUNCTION(prey_avoid_predators, MsgSpatial2D, MsgNone) {
   FLAMEGPU->setVariable<float>("steer_y", avoid_fy);
   return ALIVE;
 }
+"""
+"""
+  prey_flock agent function for Prey agents, which reads data from neighbouring prey agents to alter course to produce flocking behaviour
 """
 prey_flock = """
 FLAMEGPU_HOST_DEVICE_FUNCTION float vec2Length(const float x, const float y) {
@@ -335,6 +338,9 @@ FLAMEGPU_AGENT_FUNCTION(prey_flock, MsgSpatial2D, MsgNone) {
   return ALIVE;
 }
 """
+"""
+  prey_move agent function for Prey agents, which uses combined steering away from predators and towards prey to alter course and moves based on agent speed and time step
+"""
 prey_move="""
 FLAMEGPU_HOST_DEVICE_FUNCTION float vec2Length(const float x, const float y) {
   return sqrtf(x * x + y * y);
@@ -395,6 +401,9 @@ FLAMEGPU_AGENT_FUNCTION(prey_move, MsgNone, MsgNone) {
   return ALIVE;
 }
 """
+"""
+  prey_eaten agent function for Prey agents, which checks if nearby predators are within killing distance and messages the closest to indicate a succesful kill. The prey agent dies in this case
+"""
 prey_eaten = """
 FLAMEGPU_HOST_DEVICE_FUNCTION float vec2Length(const float x, const float y) {
   return sqrtf(x * x + y * y);
@@ -435,6 +444,9 @@ FLAMEGPU_AGENT_FUNCTION(prey_eaten, MsgSpatial2D, MsgSpatial2D) {
   return ALIVE;
 }
 """
+"""
+  prey_eat_or_starve agent function for Prey agents, which checks if any grass agents have sent an eaten message and increases its own life per grass eaten message recieved with matching id
+"""
 prey_eat_or_starve = """
 FLAMEGPU_AGENT_FUNCTION(prey_eat_or_starve, MsgSpatial2D, MsgNone) {
   int agent_life = FLAMEGPU->getVariable<int>("life");
@@ -460,6 +472,37 @@ FLAMEGPU_AGENT_FUNCTION(prey_eat_or_starve, MsgSpatial2D, MsgNone) {
   }
 
   //return value to remove dead agents from the simulation
+  return ALIVE;
+}
+"""
+"""
+  prey_reproduce agent function for Prey agents, which uses the reproduction chance environment variable and a random number to possibly generate a new prey agent in a random location. 
+    The parent agent's life value is halved and shared with the offspring prey agent.
+"""
+prey_reproduce="""
+FLAMEGPU_AGENT_FUNCTION(prey_reproduce, MsgNone, MsgNone) {
+  float reproduction = FLAMEGPU->random.uniform<float>();
+  const float PREY_REPRODUCTION_CHANCE = FLAMEGPU->environment.getProperty<float>("PREY_REPRODUCTION_CHANCE");
+  if (reproduction<PREY_REPRODUCTION_CHANCE) {
+    const float BOUNDS_WIDTH = FLAMEGPU->environment.getProperty<float>("BOUNDS_WIDTH");
+    const float SPEED_DIFFERENCE = FLAMEGPU->environment.getProperty<float>("SPEED_DIFFERENCE");
+    int new_id = FLAMEGPU->getVariable<int>("id") * 3;
+    FLAMEGPU->agent_out.setVariable<int>("id", new_id);
+    reproduction = (FLAMEGPU->random.uniform<float>()*BOUNDS_WIDTH)-(BOUNDS_WIDTH/2.0);
+    FLAMEGPU->agent_out.setVariable<float>("x", reproduction);
+    reproduction = (FLAMEGPU->random.uniform<float>()*BOUNDS_WIDTH)-(BOUNDS_WIDTH/2.0);
+    FLAMEGPU->agent_out.setVariable<float>("y", reproduction);
+    reproduction = (FLAMEGPU->random.uniform<float>()*SPEED_DIFFERENCE)-(SPEED_DIFFERENCE/2.0);
+    FLAMEGPU->agent_out.setVariable<float>("fx", reproduction);
+    reproduction = (FLAMEGPU->random.uniform<float>()*SPEED_DIFFERENCE)-(SPEED_DIFFERENCE/2.0);
+    FLAMEGPU->agent_out.setVariable<float>("fy", reproduction);
+    FLAMEGPU->agent_out.setVariable<float>("type", FLAMEGPU->getVariable<float>("type"));
+    FLAMEGPU->agent_out.setVariable<float>("steer_x", 0.0);
+    FLAMEGPU->agent_out.setVariable<float>("steer_y", 0.0);
+    int half_life = (int)(FLAMEGPU->getVariable<int>("life")/2.0);
+    FLAMEGPU->agent_out.setVariable<int>("life", half_life);
+    FLAMEGPU->setVariable<int>("life", half_life);
+  }
   return ALIVE;
 }
 """
@@ -527,6 +570,9 @@ FLAMEGPU_AGENT_FUNCTION(predator_follow_prey, MsgSpatial2D, MsgNone) {
   return ALIVE;
 }
 """
+"""
+  predator_avoidance agent function for Predator agents, which uses other predator location data to affect steering away, reproducing simple territorial behaviour
+"""
 predator_avoidance = """
 FLAMEGPU_HOST_DEVICE_FUNCTION float vec2Length(const float x, const float y) {
   return sqrtf(x * x + y * y);
@@ -569,6 +615,10 @@ FLAMEGPU_AGENT_FUNCTION(predator_avoidance, MsgSpatial2D, MsgNone) {
   FLAMEGPU->setVariable<float>("steer_y", current_steer_y+avoidance_y);
   return ALIVE;
 }
+"""
+"""
+  predator_move agent function for Predator agents, which uses steering away from predators (predator_avoidance) and prey pursuit to alter course.
+   The environment properties of predator speed advantage and time step delta are applied to alter its location.
 """
 predator_move="""
 FLAMEGPU_HOST_DEVICE_FUNCTION float vec2Length(const float x, const float y) {
@@ -631,6 +681,9 @@ FLAMEGPU_AGENT_FUNCTION(predator_move, MsgNone, MsgNone) {
   return ALIVE;
 }
 """
+"""
+  predator_eat_or_starve agent function for Predator agents, which uses prey_eaten messages recieved with matching id to increase its own life
+"""
 predator_eat_or_starve = """
 FLAMEGPU_AGENT_FUNCTION(predator_eat_or_starve, MsgSpatial2D, MsgNone) {
   int agent_life = FLAMEGPU->getVariable<int>("life");
@@ -661,8 +714,39 @@ FLAMEGPU_AGENT_FUNCTION(predator_eat_or_starve, MsgSpatial2D, MsgNone) {
 }
 """
 """
+  predator_reproduce agent function for Predator agents, which uses the reproduction chance environment variable and a random number to possibly generate a new predator agent in a random location. 
+    The parent agent's life value is halved and shared with the offspring prey agent.
+"""
+predator_reproduce="""
+FLAMEGPU_AGENT_FUNCTION(predator_reproduce, MsgNone, MsgNone) {
+  float reproduction = FLAMEGPU->random.uniform<float>();
+  const float PREDATOR_REPRODUCTION_CHANCE = FLAMEGPU->environment.getProperty<float>("PREDATOR_REPRODUCTION_CHANCE");
+  if (reproduction<PREDATOR_REPRODUCTION_CHANCE) {
+    const float BOUNDS_WIDTH = FLAMEGPU->environment.getProperty<float>("BOUNDS_WIDTH");
+    const float SPEED_DIFFERENCE = FLAMEGPU->environment.getProperty<float>("SPEED_DIFFERENCE");
+    int new_id = FLAMEGPU->getVariable<int>("id") * 3;
+    FLAMEGPU->agent_out.setVariable<int>("id", new_id);
+    reproduction = (FLAMEGPU->random.uniform<float>()*BOUNDS_WIDTH)-(BOUNDS_WIDTH/2.0);
+    FLAMEGPU->agent_out.setVariable<float>("x", reproduction);
+    reproduction = (FLAMEGPU->random.uniform<float>()*BOUNDS_WIDTH)-(BOUNDS_WIDTH/2.0);
+    FLAMEGPU->agent_out.setVariable<float>("y", reproduction);
+    reproduction = (FLAMEGPU->random.uniform<float>()*SPEED_DIFFERENCE)-(SPEED_DIFFERENCE/2.0);
+    FLAMEGPU->agent_out.setVariable<float>("fx", reproduction);
+    reproduction = (FLAMEGPU->random.uniform<float>()*SPEED_DIFFERENCE)-(SPEED_DIFFERENCE/2.0);
+    FLAMEGPU->agent_out.setVariable<float>("fy", reproduction);
+    FLAMEGPU->agent_out.setVariable<float>("type", FLAMEGPU->getVariable<float>("type"));
+    FLAMEGPU->agent_out.setVariable<float>("steer_x", 0.0);
+    FLAMEGPU->agent_out.setVariable<float>("steer_y", 0.0);
+    int half_life = (int)(FLAMEGPU->getVariable<int>("life")/2.0);
+    FLAMEGPU->agent_out.setVariable<int>("life", half_life);
+    FLAMEGPU->setVariable<int>("life", half_life);
+  }
+  return ALIVE;
+}
+"""
+"""
   GRASS
-  grass_output_location_data agent function for grass agents, which outputs publicly visible properties to a message list
+  grass_output_location_data agent function for Grass agents, which outputs publicly visible properties to a message list
 """
 grass_output_location_data = """
 FLAMEGPU_AGENT_FUNCTION(grass_output_location_data, MsgNone, MsgSpatial2D) {
@@ -673,11 +757,16 @@ FLAMEGPU_AGENT_FUNCTION(grass_output_location_data, MsgNone, MsgSpatial2D) {
   return ALIVE;
   }
 """
+"""
+  grass_eaten agent function for Grass agents, which checks if nearby prey are within eating distance and messages the closest to indicate a success. 
+    The grass agent becomes unavailable to be eaten  for a number of simulation steps equal to the grass regrowth environment property
+"""
 grass_eaten = """
 FLAMEGPU_HOST_DEVICE_FUNCTION float vec2Length(const float x, const float y) {
   return sqrtf(x * x + y * y);
 }
 FLAMEGPU_AGENT_FUNCTION(grass_eaten, MsgSpatial2D, MsgSpatial2D) {
+  //if (FLAMEGPU->getVariable<int>("available")==1) {
   int eaten = 0;
   int prey_id = -1;
   float closest_prey = FLAMEGPU->environment.getProperty<float>("GRASS_EAT_DISTANCE");
@@ -706,27 +795,45 @@ FLAMEGPU_AGENT_FUNCTION(grass_eaten, MsgSpatial2D, MsgSpatial2D) {
     FLAMEGPU->message_out.setVariable<int>("prey_id", prey_id);
     FLAMEGPU->message_out.setVariable<float>("x", agent_x);
     FLAMEGPU->message_out.setVariable<float>("y", agent_y);
-    FLAMEGPU->setVariable<float>("type", 0.0);
-    FLAMEGPU->setVariable<int>("available", 0);
-  }
 
+
+    //FLAMEGPU->setVariable<float>("type", 0.0);
+    //FLAMEGPU->setVariable<int>("available", 0);
+    FLAMEGPU->agent_out.setVariable<int>("id",FLAMEGPU->getVariable<int>("id"));
+    FLAMEGPU->agent_out.setVariable<float>("x",agent_x);
+    FLAMEGPU->agent_out.setVariable<float>("y",agent_y);
+    FLAMEGPU->agent_out.setVariable<int>("dead_cycles",0);
+    FLAMEGPU->agent_out.setVariable<float>("type",3.0);
+    return DEAD;
+  }
   return ALIVE;
 }
+//}
+"""
+"""
+  grass_growth agent function for Grass agents, which checks if the grass has been unavailable for suitable steps to regrow. If not dead_cycles increments
 """
 grass_growth = """
 FLAMEGPU_AGENT_FUNCTION(grass_growth, MsgNone, MsgNone) {
   int agent_dead_cycles = FLAMEGPU->getVariable<int>("dead_cycles");
-  int agent_availability = FLAMEGPU->getVariable<int>("available");
+  //int agent_availability = FLAMEGPU->getVariable<int>("available");
   const int GRASS_REGROW_CYCLES = FLAMEGPU->environment.getProperty<int>("GRASS_REGROW_CYCLES");
   
   if (agent_dead_cycles>=GRASS_REGROW_CYCLES) {
-    FLAMEGPU->setVariable<float>("type", 2.0);
-    FLAMEGPU->setVariable<int>("available", 1);
-    FLAMEGPU->setVariable<int>("dead_cycles", 0);
+    //FLAMEGPU->setVariable<float>("type", 2.0);
+    //FLAMEGPU->setVariable<int>("available", 1);
+    //FLAMEGPU->setVariable<int>("dead_cycles", 0);
+    FLAMEGPU->agent_out.setVariable<int>("id",FLAMEGPU->getVariable<int>("id"));
+    FLAMEGPU->agent_out.setVariable<float>("x",FLAMEGPU->getVariable<float>("x"));
+    FLAMEGPU->agent_out.setVariable<float>("y",FLAMEGPU->getVariable<float>("y"));
+    FLAMEGPU->agent_out.setVariable<int>("dead_cycles",0);
+    FLAMEGPU->agent_out.setVariable<float>("type",2.0);
+    return DEAD;
   }
-  if (agent_availability==0) {
-    FLAMEGPU->setVariable<int>("dead_cycles", agent_dead_cycles+1);
-  }
+  FLAMEGPU->setVariable<int>("dead_cycles", agent_dead_cycles+1);
+  //if (agent_availability==0) {
+  //  FLAMEGPU->setVariable<int>("dead_cycles", agent_dead_cycles+1);
+  //}
 
   return ALIVE;
 }
@@ -740,10 +847,10 @@ model = pyflamegpu.ModelDescription("Prey_Predator_Grass");
 """
 env = model.Environment();
 # Population size to generate, if no agents are loaded from disk
-env.newPropertyInt("PREY_POPULATION_TO_GENERATE", PREY_POPULATION_SIZE);
-env.newPropertyInt("PREDATOR_POPULATION_TO_GENERATE", PREDATOR_POPULATION_SIZE);
-env.newPropertyInt("GRASS_POPULATION_TO_GENERATE", GRASS_POPULATION_SIZE);
-env.newPropertyInt("CURRENT_ID", 0);
+env.newPropertyUInt("PREY_POPULATION_TO_GENERATE", PREY_POPULATION_SIZE);
+env.newPropertyUInt("PREDATOR_POPULATION_TO_GENERATE", PREDATOR_POPULATION_SIZE);
+env.newPropertyUInt("GRASS_POPULATION_TO_GENERATE", GRASS_POPULATION_SIZE);
+env.newPropertyUInt("CURRENT_ID", 0);
 
 # Number of steps to simulate
 env.newPropertyUInt("STEPS", STEPS);
@@ -766,13 +873,14 @@ env.newPropertyFloat("DELTA_TIME", 0.001);
 env.newPropertyFloat("PRED_SPEED_ADVANTAGE", 2.0);
 env.newPropertyFloat("MIN_SPEED", -1.0);
 env.newPropertyFloat("MAX_SPEED", +1.0);
+env.newPropertyFloat("SPEED_DIFFERENCE", 2.0);
 
 #Parameter globals
-env.newPropertyFloat("REPRODUCE_PREY_PROB", 0.05);
-env.newPropertyFloat("REPRODUCE_PREDATOR_PROB", 0.03);
-env.newPropertyInt("GAIN_FROM_FOOD_PREDATOR", 75);
-env.newPropertyInt("GAIN_FROM_FOOD_PREY", 50);
-env.newPropertyInt("GRASS_REGROW_CYCLES", 100);
+env.newPropertyFloat("PREY_REPRODUCTION_CHANCE", 0.05);
+env.newPropertyFloat("PREDATOR_REPRODUCTION_CHANCE", 0.03);
+env.newPropertyUInt("GAIN_FROM_FOOD_PREDATOR", 75);
+env.newPropertyUInt("GAIN_FROM_FOOD_PREY", 50);
+env.newPropertyUInt("GRASS_REGROW_CYCLES", 100);
 
 """
   Location messages
@@ -843,6 +951,7 @@ prey_agent.Function("prey_eaten").setMessageOutputOptional(True);
 prey_agent.Function("prey_eaten").setAllowAgentDeath(True)
 prey_agent.newRTCFunction("prey_eat_or_starve", prey_eat_or_starve).setMessageInput("grass_eaten_message");
 prey_agent.Function("prey_eat_or_starve").setAllowAgentDeath(True)
+prey_agent.newRTCFunction("prey_reproduce", prey_reproduce).setAgentOutput(prey_agent);
 
 """
   Predator agent
@@ -862,32 +971,52 @@ predator_agent.newRTCFunction("predator_follow_prey", predator_follow_prey).setM
 predator_agent.newRTCFunction("predator_avoidance", predator_avoidance).setMessageInput("predator_location_message");
 predator_agent.newRTCFunction("predator_move", predator_move);
 predator_agent.newRTCFunction("predator_eat_or_starve", predator_eat_or_starve).setMessageInput("prey_eaten_message");
-predator_agent.Function("predator_eat_or_starve").setAllowAgentDeath(True)
+predator_agent.Function("predator_eat_or_starve").setAllowAgentDeath(True);
+predator_agent.newRTCFunction("predator_reproduce", predator_reproduce).setAgentOutput(predator_agent);
 
 """
   Grass agent
 """
 grass_agent = model.newAgent("Grass");
+uagrass_agent = model.newAgent("Unavailable_Grass");
 grass_agent.newVariableInt("id");
 grass_agent.newVariableFloat("x");
 grass_agent.newVariableFloat("y");
 grass_agent.newVariableFloat("type");
 grass_agent.newVariableInt("dead_cycles");
-grass_agent.newVariableInt("available");
 grass_agent.newRTCFunction("grass_output_location_data", grass_output_location_data).setMessageOutput("grass_location_message");
 grass_agent.newRTCFunction("grass_eaten", grass_eaten).setMessageInput("prey_location_message");
 grass_agent.Function("grass_eaten").setMessageOutput("grass_eaten_message");
 grass_agent.Function("grass_eaten").setMessageOutputOptional(True);
-grass_agent.newRTCFunction("grass_growth", grass_growth);
+grass_agent.Function("grass_eaten").setAllowAgentDeath(True);
+grass_agent.Function("grass_eaten").setAgentOutput(uagrass_agent);
+#grass_agent.newRTCFunction("grass_growth", grass_growth);
 
+"""
+  Unavailable Grass agent
+"""
+
+uagrass_agent.newVariableInt("id");
+uagrass_agent.newVariableFloat("x");
+uagrass_agent.newVariableFloat("y");
+uagrass_agent.newVariableFloat("type");
+uagrass_agent.newVariableInt("dead_cycles");
+uagrass_agent.newRTCFunction("grass_growth", grass_growth).setAllowAgentDeath(True);
+uagrass_agent.Function("grass_growth").setAgentOutput(grass_agent);
+
+
+"""
+  Population initialisation functions
+"""
+# Add init function for creating prey population with random initial location and life within large range for testing purposes
 class initPreyPopulation(pyflamegpu.HostFunctionCallback):
   def run(self,FLAMEGPU):
-    populationSize = FLAMEGPU.environment.getPropertyInt("PREY_POPULATION_TO_GENERATE");
+    populationSize = FLAMEGPU.environment.getPropertyUInt("PREY_POPULATION_TO_GENERATE");
     min_pos = FLAMEGPU.environment.getPropertyFloat("MIN_POSITION");
     max_pos = FLAMEGPU.environment.getPropertyFloat("MAX_POSITION");
     min_speed = FLAMEGPU.environment.getPropertyFloat("MIN_SPEED");
     max_speed = FLAMEGPU.environment.getPropertyFloat("MAX_SPEED");
-    current_id = FLAMEGPU.environment.getPropertyInt("CURRENT_ID");
+    current_id = FLAMEGPU.environment.getPropertyUInt("CURRENT_ID");
     for i in range(populationSize):
       instance = FLAMEGPU.newAgent("Prey");
       instance.setVariableInt("id", current_id+i);
@@ -899,17 +1028,17 @@ class initPreyPopulation(pyflamegpu.HostFunctionCallback):
       instance.setVariableFloat("steer_x", 0.0);
       instance.setVariableFloat("steer_y", 0.0);
       instance.setVariableInt("life", random.randint(200,5000));
-    FLAMEGPU.environment.setPropertyInt("CURRENT_ID", current_id+i)
+    FLAMEGPU.environment.setPropertyUInt("CURRENT_ID", current_id+i)
     return
-# Add init function for creating predator population with random initial location
+# Add init function for creating predator population with random initial location and life within large range for testing purposes
 class initPredatorPopulation(pyflamegpu.HostFunctionCallback):
   def run(self,FLAMEGPU):
-    populationSize = FLAMEGPU.environment.getPropertyInt("PREDATOR_POPULATION_TO_GENERATE");
+    populationSize = FLAMEGPU.environment.getPropertyUInt("PREDATOR_POPULATION_TO_GENERATE");
     min_pos = FLAMEGPU.environment.getPropertyFloat("MIN_POSITION");
     max_pos = FLAMEGPU.environment.getPropertyFloat("MAX_POSITION");
     min_speed = FLAMEGPU.environment.getPropertyFloat("MIN_SPEED");
     max_speed = FLAMEGPU.environment.getPropertyFloat("MAX_SPEED");
-    current_id = FLAMEGPU.environment.getPropertyInt("CURRENT_ID");
+    current_id = FLAMEGPU.environment.getPropertyUInt("CURRENT_ID");
     for i in range(populationSize):
       instance = FLAMEGPU.newAgent("Predator");
       instance.setVariableInt("id", current_id+i);
@@ -921,15 +1050,15 @@ class initPredatorPopulation(pyflamegpu.HostFunctionCallback):
       instance.setVariableFloat("steer_x", 0.0);
       instance.setVariableFloat("steer_y", 0.0);
       instance.setVariableInt("life", random.randint(200,5000));
-    FLAMEGPU.environment.setPropertyInt("CURRENT_ID", current_id+i)
+    FLAMEGPU.environment.setPropertyUInt("CURRENT_ID", current_id+i)
     return
 # Add init function for creating grass population with random initial location
 class initGrassPopulation(pyflamegpu.HostFunctionCallback):
   def run(self,FLAMEGPU):
-    populationSize = FLAMEGPU.environment.getPropertyInt("GRASS_POPULATION_TO_GENERATE");
+    populationSize = FLAMEGPU.environment.getPropertyUInt("GRASS_POPULATION_TO_GENERATE");
     min_pos = FLAMEGPU.environment.getPropertyFloat("MIN_POSITION");
     max_pos = FLAMEGPU.environment.getPropertyFloat("MAX_POSITION");
-    current_id = FLAMEGPU.environment.getPropertyInt("CURRENT_ID");
+    current_id = FLAMEGPU.environment.getPropertyUInt("CURRENT_ID");
     for i in range(populationSize):
       instance = FLAMEGPU.newAgent("Grass");
       instance.setVariableInt("id", current_id+i);
@@ -937,8 +1066,8 @@ class initGrassPopulation(pyflamegpu.HostFunctionCallback):
       instance.setVariableFloat("y", random.uniform(min_pos, max_pos));
       instance.setVariableFloat("type", 1.0);
       instance.setVariableInt("dead_cycles", 0);
-      instance.setVariableInt("available", 1);
-    FLAMEGPU.environment.setPropertyInt("CURRENT_ID", current_id+i)
+      #instance.setVariableInt("available", 1);
+    FLAMEGPU.environment.setPropertyUInt("CURRENT_ID", current_id+i)
     return
 
 # Add function callback to INIT functions for population generation
@@ -972,38 +1101,61 @@ model.Layer("L5").addAgentFunction("Prey", "prey_eaten");
 model.newLayer("L6").addAgentFunction("Prey", "prey_eat_or_starve");
 model.Layer("L6").addAgentFunction("Predator", "predator_eat_or_starve");
 # Layer #7
-model.newLayer("L7").addAgentFunction("Grass", "grass_growth");
+model.newLayer("L7").addAgentFunction("Unavailable_Grass", "grass_growth");
+model.Layer("L7").addAgentFunction("Prey", "prey_reproduce");
+model.Layer("L7").addAgentFunction("Predator", "predator_reproduce");
 
-"""
-  Create Run Plan Vector
-"""   
-# run_plan_vector = pyflamegpu.RunPlanVec(model, ENSEMBLE_RUNS);
-# run_plan_vector.setSteps(env.getPropertyUInt("STEPS"));
-# simulation_seed = random.randint(0,99999);
-# run_plan_vector.setRandomSimulationSeed(simulation_seed,1000);
+# Create and configure logging details 
+logging_config = pyflamegpu.LoggingConfig(model);
+logging_config.logEnvironment("PREDATOR_KILL_DISTANCE");
+logging_config.logEnvironment("MIN_SPEED");
+logging_config.logEnvironment("GRASS_EAT_DISTANCE");
+logging_config.logEnvironment("CURRENT_ID");
+prey_agent_log = logging_config.agent("Prey");
+prey_agent_log.logCount();
+prey_agent_log.logMeanFloat("x");
+prey_agent_log.logMeanFloat("y");
+prey_agent_log.logMeanFloat("fx");
+prey_agent_log.logMeanFloat("fy");
+prey_agent_log.logMeanInt("life");
+prey_agent_log.logStandardDevInt("life");
+predator_agent_log = logging_config.agent("Predator");
+predator_agent_log.logCount();
+predator_agent_log.logMeanFloat("x");
+predator_agent_log.logMeanFloat("y");
+predator_agent_log.logMeanFloat("fx");
+predator_agent_log.logMeanFloat("fy");
+predator_agent_log.logMeanInt("life");
+predator_agent_log.logStandardDevInt("life");
+grass_agent_log = logging_config.agent("Grass");
+grass_agent_log.logCount();
+#grass_agent_log.logMeanInt("available");
+grass_agent_log.logMeanInt("dead_cycles");
+grass_agent_log.logStandardDevInt("dead_cycles");
+uagrass_agent_log = logging_config.agent("Unavailable_Grass");
+uagrass_agent_log.logCount();
+#grass_agent_log.logMeanInt("available");
+uagrass_agent_log.logMeanInt("dead_cycles");
+uagrass_agent_log.logStandardDevInt("dead_cycles");
+step_log = pyflamegpu.StepLoggingConfig(logging_config);
+step_log.setFrequency(1);
+
 
 """
   Create Model Runner
 """  
 if ENSEMBLE: 
-    simulation = pyflamegpu.CUDAEnsemble(model);
+  """
+  Create Run Plan Vector
+  """   
+  run_plan_vector = pyflamegpu.RunPlanVec(model, ENSEMBLE_RUNS);
+  run_plan_vector.setSteps(env.getPropertyUInt("STEPS"));
+  simulation_seed = random.randint(0,99999);
+  run_plan_vector.setRandomSimulationSeed(simulation_seed,1000);
+  simulation = pyflamegpu.CUDAEnsemble(model);
 else:
-    simulation = pyflamegpu.CUDASimulation(model);
+  simulation = pyflamegpu.CUDASimulation(model);
 
-# Create and configure logging details 
-logging_config = pyflamegpu.LoggingConfig(model);
-agent_log = logging_config.agent("Prey");
-agent_log.logMeanFloat("x");
-agent_log.logMeanFloat("y");
-agent_log.logMeanFloat("fx");
-agent_log.logMeanFloat("fy");
-# agent_log.logStandardDevFloat("x");
-# agent_log.logStandardDevFloat("y");
-# agent_log.logStandardDevFloat("z");
-agent_log.logStandardDevFloat("fx");
-agent_log.logStandardDevFloat("fy");
-step_log = pyflamegpu.StepLoggingConfig(logging_config);
-step_log.setFrequency(1);
 simulation.setStepLog(step_log);
 simulation.setExitLog(logging_config)
 
@@ -1014,20 +1166,26 @@ if pyflamegpu.VISUALISATION and VISUALISATION and not ENSEMBLE:
     visualisation = simulation.getVisualisation();
     # Configure vis
     envWidth = env.getPropertyFloat("MAX_POSITION") - env.getPropertyFloat("MIN_POSITION");
-    INIT_CAM = env.getPropertyFloat("MAX_POSITION") * 1.25;
+    INIT_CAM = env.getPropertyFloat("MAX_POSITION") * 1.5;
     visualisation.setInitialCameraLocation(0.0, 0.0, INIT_CAM);
     visualisation.setCameraSpeed(0.002 * envWidth);
     circ_prey_agt = visualisation.addAgent("Prey");
     circ_predator_agt = visualisation.addAgent("Predator");
     circ_grass_agt = visualisation.addAgent("Grass");
+    circ_uagrass_agt = visualisation.addAgent("Unavailable_Grass");
     # Position vars are named x, y, z; so they are used by default
     circ_prey_agt.setModel(pyflamegpu.ICOSPHERE);
     circ_predator_agt.setModel(pyflamegpu.ICOSPHERE);
     circ_grass_agt.setModel(pyflamegpu.ICOSPHERE);
-    circ_prey_agt.setModelScale(env.getPropertyFloat("PRED_PREY_INTERACTION_RADIUS"));
-    circ_predator_agt.setModelScale(env.getPropertyFloat("PRED_PREY_INTERACTION_RADIUS"));
-    circ_grass_agt.setModelScale(env.getPropertyFloat("PRED_PREY_INTERACTION_RADIUS"));
-
+    circ_uagrass_agt.setModel(pyflamegpu.ICOSPHERE);
+    circ_prey_agt.setModelScale(env.getPropertyFloat("PRED_PREY_INTERACTION_RADIUS")/7.5);
+    circ_prey_agt.setColor(pyflamegpu.BLUE);
+    circ_predator_agt.setModelScale(env.getPropertyFloat("PRED_PREY_INTERACTION_RADIUS")/7.5);
+    circ_predator_agt.setColor(pyflamegpu.RED);
+    circ_grass_agt.setModelScale(env.getPropertyFloat("PRED_PREY_INTERACTION_RADIUS")/7.5);
+    circ_grass_agt.setColor(pyflamegpu.GREEN);
+    circ_uagrass_agt.setModelScale(env.getPropertyFloat("PRED_PREY_INTERACTION_RADIUS")/7.5);
+    circ_uagrass_agt.setColor(pyflamegpu.WHITE);
     visualisation.activate();
 
 """
@@ -1062,109 +1220,173 @@ else:
 
 
 if ENSEMBLE:
-    positions_mean = [None]*ENSEMBLE_RUNS
-    positions_std = [None]*ENSEMBLE_RUNS
-    velocities_mean = [None]*ENSEMBLE_RUNS
-    velocities_std = [None]*ENSEMBLE_RUNS
-    text_pos = [None]*ENSEMBLE_RUNS
+    agent_counts = [None]*ENSEMBLE_RUNS
+    prey_life_mean = [None]*ENSEMBLE_RUNS
+    predator_life_mean = [None]*ENSEMBLE_RUNS
+    prey_life_std = [None]*ENSEMBLE_RUNS
+    predator_life_std = [None]*ENSEMBLE_RUNS
+    grass_available_mean = [None]*ENSEMBLE_RUNS
+    grass_dead_cycles_mean = [None]*ENSEMBLE_RUNS
+    grass_dead_cycles_std = [None]*ENSEMBLE_RUNS
+    pred_kill = [None]*ENSEMBLE_RUNS
+    min_speed = [None]*ENSEMBLE_RUNS
+    grass_eat = [None]*ENSEMBLE_RUNS
+    current_id = [None]*ENSEMBLE_RUNS
     # Read logs
     for i in range(len(logs)):
-        sl = logs[i].getStepLog();
-        positions_mean[i] = [[],[],[]];
-        velocities_mean[i] = [[],[],[]];
-        velocities_std[i] = [[],[],[]];
-        text_pos[i] = [[0,0,0,"start"],[0,0,0,"finish"]];
-        counter = 0;
-        for step in sl:
-            if counter>0:
-                agents = step.getAgent("Boid");
-                # Collect agent data
-                positions_mean[i][0].append(agents.getMean("x"));
-                positions_mean[i][1].append(agents.getMean("y"));
-                positions_mean[i][2].append(agents.getMean("z"));
-                velocities_mean[i][0].append(agents.getMean("fx"));
-                velocities_mean[i][1].append(agents.getMean("fy"));
-                velocities_mean[i][2].append(agents.getMean("fz"));
-                velocities_std[i][0].append(agents.getStandardDev("fx"));
-                velocities_std[i][1].append(agents.getStandardDev("fy"));
-                velocities_std[i][2].append(agents.getStandardDev("fz"));
-                #Set start and finish positions for graph text placement
-                if counter==1:
-                    text_pos[i][0][0] = agents.getMean("x");
-                    text_pos[i][0][1] = agents.getMean("y");
-                    text_pos[i][0][2] = agents.getMean("z");
-                elif counter==len(sl)-1:
-                    text_pos[i][1][0] = agents.getMean("x");
-                    text_pos[i][1][1] = agents.getMean("y");
-                    text_pos[i][1][2] = agents.getMean("z");
-            counter+=1;
+      sl = logs[i].getStepLog();
+      agent_counts[i] = [["ensemble_run_"+str(i)+"_prey"],["ensemble_run_"+str(i)+"_pred"],["ensemble_run_"+str(i)+"_gras"]];
+      prey_life_mean[i] = ["ensemble_run_"+str(i)];
+      prey_life_std[i] = ["ensemble_run_"+str(i)];
+      predator_life_mean[i] = ["ensemble_run_"+str(i)];
+      predator_life_std[i] = ["ensemble_run_"+str(i)];
+      grass_available_mean[i] = ["ensemble_run_"+str(i)];
+      grass_dead_cycles_mean[i] = ["ensemble_run_"+str(i)];
+      grass_dead_cycles_std[i] = ["ensemble_run_"+str(i)];
+      pred_kill[i] = ["ensemble_run_"+str(i)];
+      min_speed[i] = ["ensemble_run_"+str(i)];
+      grass_eat[i] = ["ensemble_run_"+str(i)];
+      current_id[i] = ["ensemble_run_"+str(i)];
+      for step in sl:
+        # Collect step data
+        prey_agents = step.getAgent("Prey");
+        predator_agents = step.getAgent("Predator");
+        grass_agents = step.getAgent("Grass");
+        pred_kill[i].append(step.getEnvironmentPropertyFloat("PREDATOR_KILL_DISTANCE"));
+        min_speed[i].append(step.getEnvironmentPropertyFloat("MIN_SPEED"));
+        grass_eat[i].append(step.getEnvironmentPropertyFloat("GRASS_EAT_DISTANCE"));
+        current_id[i].append(step.getEnvironmentPropertyUInt("CURRENT_ID"));
+        # Collect agent data from step
+        prey_life_mean[i].append(prey_agents.getMean("life"));
+        prey_life_std[i].append(prey_agents.getStandardDev("life"));
+        agent_counts[i][0].append(prey_agents.getCount());
 
+        predator_life_mean[i].append(predator_agents.getMean("life"));
+        predator_life_std[i].append(predator_agents.getStandardDev("life"));
+        agent_counts[i][1].append(predator_agents.getCount());
+
+        grass_dead_cycles_mean[i].append(grass_agents.getMean("dead_cycles"));
+        grass_dead_cycles_std[i].append(grass_agents.getStandardDev("dead_cycles"));
+        #agent_counts[i][2].append(int(grass_agents.getMean("available")*grass_agents.getCount()));
+        agent_counts[i][2].append(grass_agents.getCount());
+        #grass_available_mean[i].append(grass_agents.getMean("available"));
+        #agent_counts[i][2].append(grass_agents.getCount());
+
+    # Print log data    
+    # print("prey life mean",prey_life_mean);
+    # print("prey life std",prey_life_std);
+    # print()
+    # print("predator life mean",predator_life_mean);
+    # print("predator life std",predator_life_std);
+    # print()
+    # print("grass available mean",grass_available_mean);
+    # print("grass dead cycles mean",grass_dead_cycles_mean);
+    # print("grass dead cycles std",grass_dead_cycles_std);
+    print()
+
+
+    #Print warning data
+    print("Agent counts per step per ensemble run")
+    for j in range(len(agent_counts)):
+      for k in range(len(agent_counts[j])):
+        print(agent_counts[j][k])
+    print()
+    print("Predator kill distance environment variable (cut to 9 steps/40 for readability)")
+    for l in range(len(pred_kill)):
+      print(pred_kill[l][:10])
+    print()
+    print("Min speed environment variable (cut to 9 steps/40 for readability)")
+    for m in range(len(min_speed)):
+      print(min_speed[m][:10])
+    print()
+    print("Grass eat distance environment variable (cut to 9 steps/40 for readability) - No curve warning")
+    for n in range(len(grass_eat)):
+      print(grass_eat[n][:10])
+    #print("grass eat distance environment property",grass_eat);
+    #print("current_id environment property",current_id);
+
+
+    """
+      Boid graph generation for future reference
+    """
     # Generate graphs 
-    for j in range(ENSEMBLE_RUNS):
-        # Plot 3d graph of average flock position over simulation for individual model run
-        fig = plt.figure(figsize=(8,8));
-        ax = fig.gca(projection='3d');
-        ax.set_xlabel("Model environment x");
-        ax.set_ylabel("Model environment y");
-        ax.set_zlabel("Model environment z");
-        fig.suptitle("Ensemble run "+str(j)+" boids mean flock positions",fontsize=16);
-        label = "Boids mean flock position, ensemble run "+str(j);
-        fname = "average_flock_positions_run"+str(j)+".png";
-        # Position start and finish flock position text
-        for k in text_pos[j]:
-            ax.text(k[0],k[1],k[2],k[3],None);
-        ax.plot(positions_mean[j][0], positions_mean[j][1], positions_mean[j][2], label=label);
-        #ax.set_xlim3d([-1.0,1.0]);
-        #ax.set_ylim3d([-1.0,1.0]);
-        #ax.set_zlim3d([-1.0,1.0]);
-        ax.legend();
-        plt.savefig(fname,format='png');
-        plt.close(fig);
+    # for j in range(ENSEMBLE_RUNS):
+    #     # Plot 3d graph of average flock position over simulation for individual model run
+    #     fig = plt.figure(figsize=(8,8));
+    #     ax = fig.gca(projection='3d');
+    #     ax.set_xlabel("Model environment x");
+    #     ax.set_ylabel("Model environment y");
+    #     ax.set_zlabel("Model environment z");
+    #     fig.suptitle("Ensemble run "+str(j)+" boids mean flock positions",fontsize=16);
+    #     label = "Boids mean flock position, ensemble run "+str(j);
+    #     fname = "average_flock_positions_run"+str(j)+".png";
+    #     # Position start and finish flock position text
+    #     for k in text_pos[j]:
+    #         ax.text(k[0],k[1],k[2],k[3],None);
+    #     ax.plot(positions_mean[j][0], positions_mean[j][1], positions_mean[j][2], label=label);
+    #     ax.set_xlim3d([-1.0,1.0]);
+    #     ax.set_ylim3d([-1.0,1.0]);
+    #     ax.set_zlim3d([-1.0,1.0]);
+    #     ax.legend();
+    #     plt.savefig(fname,format='png');
+    #     plt.close(fig);
 
-        # Plot graphs for average of each fx, fy, and fz with standard deviation error bars
-        steplist = range(STEPS);
-        fig,(axx,axy,axz) = plt.subplots(1,3, figsize=(21,6));
-        fig.suptitle("Ensemble run "+str(j)+" mean boid velocities with std errorbar",fontsize=16);
-        velfname = "mean_velocities_run"+str(j)+".png";
-        axx.errorbar(steplist,velocities_mean[j][0],yerr=velocities_std[j][0],elinewidth=0.5,capsize=1.0);
-        axx.set_xlabel("Simulation step");
-        axx.set_ylabel("Boid agents average fx");
-        axy.errorbar(steplist,velocities_mean[j][1],yerr=velocities_std[j][1],elinewidth=0.5,capsize=1.0);
-        axy.set_xlabel("Simulation step");
-        axy.set_ylabel("Boid agents average fy");
-        axz.errorbar(steplist,velocities_mean[j][2],yerr=velocities_std[j][2],elinewidth=0.5,capsize=1.0);
-        axz.set_xlabel("Simulation step");
-        axz.set_ylabel("Boid agents average fz");
-        plt.savefig(velfname,format='png');
-        plt.close(fig);
+    #     # Plot graphs for average of each fx, fy, and fz with standard deviation error bars
+    #     steplist = range(STEPS);
+    #     fig,(axx,axy,axz) = plt.subplots(1,3, figsize=(21,6));
+    #     fig.suptitle("Ensemble run "+str(j)+" mean boid velocities with std errorbar",fontsize=16);
+    #     velfname = "mean_velocities_run"+str(j)+".png";
+    #     axx.errorbar(steplist,velocities_mean[j][0],yerr=velocities_std[j][0],elinewidth=0.5,capsize=1.0);
+    #     axx.set_xlabel("Simulation step");
+    #     axx.set_ylabel("Boid agents average fx");
+    #     axy.errorbar(steplist,velocities_mean[j][1],yerr=velocities_std[j][1],elinewidth=0.5,capsize=1.0);
+    #     axy.set_xlabel("Simulation step");
+    #     axy.set_ylabel("Boid agents average fy");
+    #     axz.errorbar(steplist,velocities_mean[j][2],yerr=velocities_std[j][2],elinewidth=0.5,capsize=1.0);
+    #     axz.set_xlabel("Simulation step");
+    #     axz.set_ylabel("Boid agents average fz");
+    #     plt.savefig(velfname,format='png');
+    #     plt.close(fig);
 
-    # Plot every model in esemble's average flock position over simulation on the same 3d graph
-    fig = plt.figure(figsize=(12,12));
-    fig.suptitle("Ensemble Boids mean flock positions",fontsize=16);
-    ax = fig.gca(projection='3d');
-    ax.set_xlabel("Model environment x");
-    ax.set_ylabel("Model environment y");
-    ax.set_zlabel("Model environment z");
-    fname = "ensemble_average_flock_positions.png";
-    ## Plot start and finish text for each flock path ---VERY CLUTTERED---
-    # for i in text_pos:
-    #     for k in i:
-    #         ax.text(k[0],k[1],k[2],k[3],'x');
-    jcount = 0;
-    for j in positions_mean:
-        label1 = "Run "+str(jcount);
-        ax.plot(j[0], j[1], j[2], label=label1);
-        jcount+=1;
-    #ax.set_xlim3d([-1.0,1.0]);
-    #ax.set_ylim3d([-1.0,1.0]);
-    #ax.set_zlim3d([-1.0,1.0]);
-    ax.legend();
-    plt.savefig(fname,format='png');
-    plt.close(fig);
+    # # Plot every model in esemble's average flock position over simulation on the same 3d graph
+    # fig = plt.figure(figsize=(12,12));
+    # fig.suptitle("Ensemble Boids mean flock positions",fontsize=16);
+    # ax = fig.gca(projection='3d');
+    # ax.set_xlabel("Model environment x");
+    # ax.set_ylabel("Model environment y");
+    # ax.set_zlabel("Model environment z");
+    # fname = "ensemble_average_flock_positions.png";
+    # ## Plot start and finish text for each flock path ---VERY CLUTTERED---
+    # # for i in text_pos:
+    # #     for k in i:
+    # #         ax.text(k[0],k[1],k[2],k[3],'x');
+    # jcount = 0;
+    # for j in positions_mean:
+    #     label1 = "Run "+str(jcount);
+    #     ax.plot(j[0], j[1], j[2], label=label1);
+    #     jcount+=1;
+    # #ax.set_xlim3d([-1.0,1.0]);
+    # #ax.set_ylim3d([-1.0,1.0]);
+    # #ax.set_zlim3d([-1.0,1.0]);
+    # ax.legend();
+    # plt.savefig(fname,format='png');
+    # plt.close(fig);
 else:
     steps = logs.getStepLog();
+    prey_agent_counts = [None]*len(steps)
+    predator_agent_counts = [None]*len(steps)
+    grass_agent_counts = [None]*len(steps)
+    counter = 0;
     for step in steps:
         stepcount = step.getStepCount();
-        agents = step.getAgent("Prey");
-        print("Step: ",stepcount,"\tAverage flock position (x,y,z): ",agents.getMean("x"),", ",agents.getMean("y"));
-
+        prey_agents = step.getAgent("Prey");
+        predator_agents = step.getAgent("Predator");
+        grass_agents = step.getAgent("Grass");
+        prey_agent_counts[counter] = prey_agents.getCount();
+        predator_agent_counts[counter] = predator_agents.getCount();
+        grass_agent_counts[counter] = grass_agents.getCount();
+        counter+=1;
+    print()
+    print("Agent counts per step")
+    for j in range(len(steps)):
+      print("step",j,"prey",prey_agent_counts[j],"predators",predator_agent_counts[j],"grass",grass_agent_counts[j]) 
