@@ -1881,6 +1881,152 @@ _pyflamegpu.HostFunctionConditionCallback_swigregister(HostFunctionConditionCall
 
 CONTINUE = _pyflamegpu.CONTINUE
 EXIT = _pyflamegpu.EXIT
+class DependencyNode(object):
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
+    __repr__ = _swig_repr
+    __swig_destroy__ = _pyflamegpu.delete_DependencyNode
+
+    def dependsOn(self, dep):
+        r"""
+        Specifies that this agent function depends on the completion of all of the provided functions
+        :param dependencyList: The host functions, agent functions and submodels which this depends on
+        """
+        return _pyflamegpu.DependencyNode_dependsOn(self, dep)
+
+    def __init__(self):
+        _pyflamegpu.DependencyNode_swiginit(self, _pyflamegpu.new_DependencyNode())
+
+# Register DependencyNode in _pyflamegpu:
+_pyflamegpu.DependencyNode_swigregister(DependencyNode)
+
+class DependencyGraph(object):
+    r"""
+    This class represents the dependency tree for agent functions, host functions and submodels. Each DependencyNode has its own dependencies/dependents, the purpose of this class is to
+    walk the dependency tree and provide utility such as validation/layering.
+    See also: DependencyNode
+    """
+
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
+    __repr__ = _swig_repr
+
+    def __init__(self, *args):
+        r"""
+        *Overload 1:*
+
+        Constructors
+
+        |
+
+        *Overload 2:*
+
+        Used by ModelData for instantiation
+
+        |
+
+        *Overload 3:*
+
+        Deep copy
+        """
+        _pyflamegpu.DependencyGraph_swiginit(self, _pyflamegpu.new_DependencyGraph(*args))
+
+    def __eq__(self, rhs):
+        r"""
+        Equality operator, checks whether DependencyGraphs are functionally the same, i.e, do they represent the same execution graph
+        :rtype: boolean
+        :return: True when both graphs represent the same execution graph
+        Notes: Instead compare pointers if you wish to check that they are the same instance
+        """
+        return _pyflamegpu.DependencyGraph___eq__(self, rhs)
+
+    def addRoot(self, root):
+        r"""
+        Add an AgentFunctionDescription, host function or submodel as a root node
+        :type root: :py:class:`DependencyNode`
+        :param root: The function or submodel to add to the graph as a root
+        """
+        return _pyflamegpu.DependencyGraph_addRoot(self, root)
+
+    def validateDependencyGraph(self):
+        r"""
+        Checks the dependency graph for cycles and validates that all agent functions belong to the same model
+        :rtype: boolean
+        :return: True when the graph is valid, i.e. it contains no cycles
+        """
+        return _pyflamegpu.DependencyGraph_validateDependencyGraph(self)
+
+    def generateLayers(self, model):
+        r"""
+        Generates optimal layers based on the dependencies specified and adds them to the model
+        :type model: :py:class:`ModelDescription`
+        :param model: The model the layers should be added to
+        :raises: InvalidDependencyGraph if the model already has layers attached
+        """
+        return _pyflamegpu.DependencyGraph_generateLayers(self, model)
+
+    def generateDOTDiagram(self, outputFileName):
+        r"""
+        Generates a .gv file containing the DOT representation of the dependencies specified
+        :type outputFileName: string
+        :param outputFileName: The name of the output file
+        """
+        return _pyflamegpu.DependencyGraph_generateDOTDiagram(self, outputFileName)
+
+    def getConstructedLayersString(self):
+        r"""
+        Returns a string representation of the constructed layers
+        :rtype: string
+        :return: A string representation of the constructed layers
+        """
+        return _pyflamegpu.DependencyGraph_getConstructedLayersString(self)
+    __swig_destroy__ = _pyflamegpu.delete_DependencyGraph
+
+# Register DependencyGraph in _pyflamegpu:
+_pyflamegpu.DependencyGraph_swigregister(DependencyGraph)
+
+class HostFunctionDescription(DependencyNode):
+    r"""Within the model hierarchy, this class represents a host function for a FLAMEGPU model"""
+
+    thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
+    __repr__ = _swig_repr
+
+    def __init__(self, *args):
+        _pyflamegpu.HostFunctionDescription_swiginit(self, _pyflamegpu.new_HostFunctionDescription(*args))
+
+    def __eq__(self, rhs):
+        r"""
+        Equality operator, checks whether HostFunctionDescription hierarchies are functionally the same
+        :rtype: boolean
+        :return: True when agent functions are the same
+        Notes: Instead compare pointers if you wish to check that they are the same instance
+        """
+        return _pyflamegpu.HostFunctionDescription___eq__(self, rhs)
+
+    def __ne__(self, rhs):
+        r"""
+        Equality operator, checks whether HostFunctionDescription hierarchies are functionally different
+        :rtype: boolean
+        :return: True when agent functions are not the same
+        Notes: Instead compare pointers if you wish to check that they are not the same instance
+        """
+        return _pyflamegpu.HostFunctionDescription___ne__(self, rhs)
+
+    def getFunctionPtr(self):
+        r"""
+        :rtype: FLAMEGPU_HOST_FUNCTION_POINTER
+        :return: The cuda kernel entry point for executing the agent function
+        """
+        return _pyflamegpu.HostFunctionDescription_getFunctionPtr(self)
+
+    def getCallbackObject(self):
+        return _pyflamegpu.HostFunctionDescription_getCallbackObject(self)
+
+    def getName(self):
+        return _pyflamegpu.HostFunctionDescription_getName(self)
+    __swig_destroy__ = _pyflamegpu.delete_HostFunctionDescription
+
+# Register HostFunctionDescription in _pyflamegpu:
+_pyflamegpu.HostFunctionDescription_swigregister(HostFunctionDescription)
+
 class ModelDescription(object):
     r"""
     This class represents the hierarchy of components for a FLAMEGPU model
@@ -2073,6 +2219,17 @@ class ModelDescription(object):
         :return: The model's name
         """
         return _pyflamegpu.ModelDescription_getName(self)
+
+    def getDependencyGraph(self):
+        r"""
+        :rtype: :py:class:`DependencyGraph`
+        :return: A reference to the this model's DependencyGraph
+        """
+        return _pyflamegpu.ModelDescription_getDependencyGraph(self)
+
+    def generateLayers(self):
+        r"""Generates layers from the dependency graph"""
+        return _pyflamegpu.ModelDescription_generateLayers(self)
 
     def getAgent(self, agent_name):
         r"""
@@ -2641,7 +2798,7 @@ class AgentDescription(object):
 # Register AgentDescription in _pyflamegpu:
 _pyflamegpu.AgentDescription_swigregister(AgentDescription)
 
-class AgentFunctionDescription(object):
+class AgentFunctionDescription(DependencyNode):
     r"""
     Within the model hierarchy, this class represents an agent function for a FLAMEGPU model
     This class is used to configure external elements of agent functions, such as inputs and outputs
@@ -4717,7 +4874,7 @@ class LayerDescription(object):
         """
         return _pyflamegpu.LayerDescription_addSubModel(self, *args)
 
-    def addHostFunctionCallback(self, func_callback):
+    def _addHostFunctionCallback(self, func_callback):
         r"""
         Adds a host function to this layer, similar to addHostFunction
         however the runnable function is encapsulated within an object which permits cross language support in swig.
@@ -4725,8 +4882,9 @@ class LayerDescription(object):
         :type func_callback: :py:class:`HostFunctionCallback`
         :param func_callback: a Host function callback object
         :raises: InvalidHostFunc If the function has already been added to the layer
+        Notes: ONLY USED INTERNALLY AND BY PYTHON API - DO NOT CALL IN C++ BUILD
         """
-        return _pyflamegpu.LayerDescription_addHostFunctionCallback(self, func_callback)
+        return _pyflamegpu.LayerDescription__addHostFunctionCallback(self, func_callback)
 
     def getName(self):
         r"""
@@ -4762,6 +4920,18 @@ class LayerDescription(object):
         :return: The total number of host function callbacks within the layer
         """
         return _pyflamegpu.LayerDescription_getHostFunctionCallbackCount(self)
+
+    def addHostFunctionCallback(self, func_callback):
+        r"""
+        Adds a host function to this layer, similar to addHostFunction
+        however the runnable function is encapsulated within an object which permits cross language support in swig.
+        The host function will be called during this stage of model execution
+        :type func_callback: :py:class:`HostFunctionCallback`
+        :param func_callback: a Host function callback object
+        :raises: InvalidHostFunc If the function has already been added to the layer
+        Notes: ONLY USED INTERNALLY AND BY PYTHON API - DO NOT CALL IN C++ BUILD
+        """
+        return _pyflamegpu.LayerDescription_addHostFunctionCallback(self, func_callback)
 
     def getAgentFunction(self, index):
         r"""
@@ -4803,7 +4973,7 @@ class LayerDescription(object):
 # Register LayerDescription in _pyflamegpu:
 _pyflamegpu.LayerDescription_swigregister(LayerDescription)
 
-class SubModelDescription(object):
+class SubModelDescription(DependencyNode):
     r"""This class provides an interface to a mapping between the parent and sub-model"""
 
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
@@ -4879,6 +5049,9 @@ class SubModelDescription(object):
         0 is unlimited, however requires the model to have an exit condition
         """
         return _pyflamegpu.SubModelDescription_getMaxSteps(self)
+
+    def getName(self):
+        return _pyflamegpu.SubModelDescription_getName(self)
     __swig_destroy__ = _pyflamegpu.delete_SubModelDescription
 
 # Register SubModelDescription in _pyflamegpu:
@@ -5027,6 +5200,7 @@ class AgentVector(object):
         :param other: another container to be used as source to initialize the elements of the container with
         """
         _pyflamegpu.AgentVector_swiginit(self, _pyflamegpu.new_AgentVector(*args))
+    __swig_destroy__ = _pyflamegpu.delete_AgentVector
 
     def at(self, *args):
         return _pyflamegpu.AgentVector_at(self, *args)
@@ -5118,14 +5292,14 @@ class AgentVector(object):
         r"""
         *Overload 1:*
 
-        Appends the given element value to the end of the container.
+        Appends the given agent to the end of the container.
         The new element is initialized as a copy of value
 
         If the new size() is greater than capacity() then all iterators and references (including the past-the-end iterator) are invalidated.
         Otherwise only the past-the-end iterator is invalidated.
 
         :type value: :py:class:`AgentInstance`
-        :param value:	the value of the element to append
+        :param value:	the value of the agent to append
 
         :raises: InvalidAgent If the agent type of the AgentInstance doesn't match the agent type of the AgentVector
 
@@ -5133,13 +5307,13 @@ class AgentVector(object):
 
         *Overload 2:*
 
-        Appends a default initialised element to the end of the container
+        Appends a default initialised agent to the end of the container
         """
         return _pyflamegpu.AgentVector_push_back(self, *args)
 
     def pop_back(self):
         r"""
-        Removes the last element of the container.
+        Removes the last agent of the container.
         Calling pop_back on an empty container results in undefined behavior.
         Iterators and references to the last element, as well as the end() iterator, are invalidated.
         """
@@ -5147,7 +5321,7 @@ class AgentVector(object):
 
     def resize(self, count):
         r"""
-        Resizes the container to contain count elements.
+        Resizes the vector to contain count agents.
 
         If the current size is greater than count, the container is reduced to its first count elements.
 
@@ -5196,7 +5370,6 @@ class AgentVector(object):
 
     def __setitem__(self, index, value):
         return _pyflamegpu.AgentVector___setitem__(self, index, value)
-    __swig_destroy__ = _pyflamegpu.delete_AgentVector
 
 # Register AgentVector in _pyflamegpu:
 _pyflamegpu.AgentVector_swigregister(AgentVector)
@@ -5988,7 +6161,7 @@ class CUDASimulation_Config(object):
 # Register CUDASimulation_Config in _pyflamegpu:
 _pyflamegpu.CUDASimulation_Config_swigregister(CUDASimulation_Config)
 
-class FLAMEGPU_HOST_API(object):
+class HostAPI(object):
     r"""
     A flame gpu api class for use by host functions only
     This class should only be used by init/step/exit/exitcondition functions.
@@ -5997,44 +6170,19 @@ class FLAMEGPU_HOST_API(object):
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
     __repr__ = _swig_repr
 
-    def __init__(self, _agentModel, rng, agentOffsets, agentData):
+    def __init__(self, _agentModel, rng, scatter, agentOffsets, agentData, streamId, stream):
         r"""
         Initailises pointers to 0
         Stores reference of CUDASimulation
         """
-        _pyflamegpu.FLAMEGPU_HOST_API_swiginit(self, _pyflamegpu.new_FLAMEGPU_HOST_API(_agentModel, rng, agentOffsets, agentData))
-    __swig_destroy__ = _pyflamegpu.delete_FLAMEGPU_HOST_API
+        _pyflamegpu.HostAPI_swiginit(self, _pyflamegpu.new_HostAPI(_agentModel, rng, scatter, agentOffsets, agentData, streamId, stream))
+    __swig_destroy__ = _pyflamegpu.delete_HostAPI
 
     def agent(self, *args):
         r"""Returns methods that work on all agents of a certain type currently in a given state"""
-        return _pyflamegpu.FLAMEGPU_HOST_API_agent(self, *args)
-
-    def newAgent(self, *args):
-        r"""
-        *Overload 1:*
-
-        Creates a new agent of the named type and returns an object for configuring it's member variables
-        The agent is created in their initial state as defined in model description hierarchy
-        :type agent_name: string
-        :param agent_name: Name of the agent type to be created
-        :raises: InvalidAgentName If an agent with the provided name does not exist withint he model description hierarchy
-
-        |
-
-        *Overload 2:*
-
-        Creates a new agent of the named type and returns an object for configuring it's member variables
-        The agent is created in their initial state as defined in model description hierarchy
-        :type agent_name: string
-        :param agent_name: Name of the agent type to be created
-        :type state: string
-        :param state: Name of the state the agent should be created in
-        :raises: InvalidAgentName If an agent with the provided name does not exist withint he model description hierarchy
-        :raises: InvalidStateName If state name does not apply to named agent
-        """
-        return _pyflamegpu.FLAMEGPU_HOST_API_newAgent(self, *args)
-    random = property(_pyflamegpu.FLAMEGPU_HOST_API_random_get, doc=r"""Host API access to seeded random number generation""")
-    environment = property(_pyflamegpu.FLAMEGPU_HOST_API_environment_get, doc=r"""Host API access to environmental properties""")
+        return _pyflamegpu.HostAPI_agent(self, *args)
+    random = property(_pyflamegpu.HostAPI_random_get, doc=r"""Host API access to seeded random number generation""")
+    environment = property(_pyflamegpu.HostAPI_environment_get, doc=r"""Host API access to environmental properties""")
 
     def getStepCounter(self):
         r"""
@@ -6042,13 +6190,13 @@ class FLAMEGPU_HOST_API(object):
         :rtype: int
         :return: the current step count, 0 indexed unsigned.
         """
-        return _pyflamegpu.FLAMEGPU_HOST_API_getStepCounter(self)
+        return _pyflamegpu.HostAPI_getStepCounter(self)
 
-# Register FLAMEGPU_HOST_API in _pyflamegpu:
-_pyflamegpu.FLAMEGPU_HOST_API_swigregister(FLAMEGPU_HOST_API)
+# Register HostAPI in _pyflamegpu:
+_pyflamegpu.HostAPI_swigregister(HostAPI)
 
 class NewAgentStorage(object):
-    r"""This struct provides a compact smemory store for storing generic variables in a single struct"""
+    r"""This struct provides a compact memory store for storing generic variables in a single struct"""
 
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
     __repr__ = _swig_repr
@@ -6060,7 +6208,7 @@ class NewAgentStorage(object):
 # Register NewAgentStorage in _pyflamegpu:
 _pyflamegpu.NewAgentStorage_swigregister(NewAgentStorage)
 
-class FLAMEGPU_HOST_NEW_AGENT_API(object):
+class HostNewAgentAPI(object):
     r"""This is the main API class used by a user for creating new agents on the host"""
 
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
@@ -6079,191 +6227,210 @@ class FLAMEGPU_HOST_NEW_AGENT_API(object):
         Copy Constructor
         This does not duplicate the agent, they both point to the same data, it updates the pointed to agent data
         """
-        _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_swiginit(self, _pyflamegpu.new_FLAMEGPU_HOST_NEW_AGENT_API(*args))
+        _pyflamegpu.HostNewAgentAPI_swiginit(self, _pyflamegpu.new_HostNewAgentAPI(*args))
 
     def getVariableFloat(self, *args):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_getVariableFloat(self, *args)
+        return _pyflamegpu.HostNewAgentAPI_getVariableFloat(self, *args)
 
     def getVariableDouble(self, *args):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_getVariableDouble(self, *args)
+        return _pyflamegpu.HostNewAgentAPI_getVariableDouble(self, *args)
 
     def getVariableInt16(self, *args):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_getVariableInt16(self, *args)
+        return _pyflamegpu.HostNewAgentAPI_getVariableInt16(self, *args)
 
     def getVariableInt32(self, *args):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_getVariableInt32(self, *args)
+        return _pyflamegpu.HostNewAgentAPI_getVariableInt32(self, *args)
 
     def getVariableInt64(self, *args):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_getVariableInt64(self, *args)
+        return _pyflamegpu.HostNewAgentAPI_getVariableInt64(self, *args)
 
     def getVariableUInt16(self, *args):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_getVariableUInt16(self, *args)
+        return _pyflamegpu.HostNewAgentAPI_getVariableUInt16(self, *args)
 
     def getVariableUInt32(self, *args):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_getVariableUInt32(self, *args)
+        return _pyflamegpu.HostNewAgentAPI_getVariableUInt32(self, *args)
 
     def getVariableUInt64(self, *args):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_getVariableUInt64(self, *args)
+        return _pyflamegpu.HostNewAgentAPI_getVariableUInt64(self, *args)
 
     def getVariableInt(self, *args):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_getVariableInt(self, *args)
+        return _pyflamegpu.HostNewAgentAPI_getVariableInt(self, *args)
 
     def getVariableUInt(self, *args):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_getVariableUInt(self, *args)
+        return _pyflamegpu.HostNewAgentAPI_getVariableUInt(self, *args)
 
     def getVariableInt8(self, *args):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_getVariableInt8(self, *args)
+        return _pyflamegpu.HostNewAgentAPI_getVariableInt8(self, *args)
 
     def getVariableUInt8(self, *args):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_getVariableUInt8(self, *args)
+        return _pyflamegpu.HostNewAgentAPI_getVariableUInt8(self, *args)
 
     def getVariableChar(self, *args):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_getVariableChar(self, *args)
+        return _pyflamegpu.HostNewAgentAPI_getVariableChar(self, *args)
 
     def getVariableUChar(self, *args):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_getVariableUChar(self, *args)
+        return _pyflamegpu.HostNewAgentAPI_getVariableUChar(self, *args)
 
     def getVariableArrayFloat(self, var_name):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_getVariableArrayFloat(self, var_name)
+        return _pyflamegpu.HostNewAgentAPI_getVariableArrayFloat(self, var_name)
 
     def getVariableArrayDouble(self, var_name):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_getVariableArrayDouble(self, var_name)
+        return _pyflamegpu.HostNewAgentAPI_getVariableArrayDouble(self, var_name)
 
     def getVariableArrayInt16(self, var_name):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_getVariableArrayInt16(self, var_name)
+        return _pyflamegpu.HostNewAgentAPI_getVariableArrayInt16(self, var_name)
 
     def getVariableArrayInt32(self, var_name):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_getVariableArrayInt32(self, var_name)
+        return _pyflamegpu.HostNewAgentAPI_getVariableArrayInt32(self, var_name)
 
     def getVariableArrayInt64(self, var_name):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_getVariableArrayInt64(self, var_name)
+        return _pyflamegpu.HostNewAgentAPI_getVariableArrayInt64(self, var_name)
 
     def getVariableArrayUInt16(self, var_name):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_getVariableArrayUInt16(self, var_name)
+        return _pyflamegpu.HostNewAgentAPI_getVariableArrayUInt16(self, var_name)
 
     def getVariableArrayUInt32(self, var_name):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_getVariableArrayUInt32(self, var_name)
+        return _pyflamegpu.HostNewAgentAPI_getVariableArrayUInt32(self, var_name)
 
     def getVariableArrayUInt64(self, var_name):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_getVariableArrayUInt64(self, var_name)
+        return _pyflamegpu.HostNewAgentAPI_getVariableArrayUInt64(self, var_name)
 
     def getVariableArrayInt(self, var_name):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_getVariableArrayInt(self, var_name)
+        return _pyflamegpu.HostNewAgentAPI_getVariableArrayInt(self, var_name)
 
     def getVariableArrayUInt(self, var_name):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_getVariableArrayUInt(self, var_name)
+        return _pyflamegpu.HostNewAgentAPI_getVariableArrayUInt(self, var_name)
 
     def getVariableArrayInt8(self, var_name):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_getVariableArrayInt8(self, var_name)
+        return _pyflamegpu.HostNewAgentAPI_getVariableArrayInt8(self, var_name)
 
     def getVariableArrayUInt8(self, var_name):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_getVariableArrayUInt8(self, var_name)
+        return _pyflamegpu.HostNewAgentAPI_getVariableArrayUInt8(self, var_name)
 
     def getVariableArrayChar(self, var_name):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_getVariableArrayChar(self, var_name)
+        return _pyflamegpu.HostNewAgentAPI_getVariableArrayChar(self, var_name)
 
     def getVariableArrayUChar(self, var_name):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_getVariableArrayUChar(self, var_name)
+        return _pyflamegpu.HostNewAgentAPI_getVariableArrayUChar(self, var_name)
 
     def setVariableFloat(self, *args):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_setVariableFloat(self, *args)
+        return _pyflamegpu.HostNewAgentAPI_setVariableFloat(self, *args)
 
     def setVariableDouble(self, *args):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_setVariableDouble(self, *args)
+        return _pyflamegpu.HostNewAgentAPI_setVariableDouble(self, *args)
 
     def setVariableInt16(self, *args):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_setVariableInt16(self, *args)
+        return _pyflamegpu.HostNewAgentAPI_setVariableInt16(self, *args)
 
     def setVariableInt32(self, *args):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_setVariableInt32(self, *args)
+        return _pyflamegpu.HostNewAgentAPI_setVariableInt32(self, *args)
 
     def setVariableInt64(self, *args):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_setVariableInt64(self, *args)
+        return _pyflamegpu.HostNewAgentAPI_setVariableInt64(self, *args)
 
     def setVariableUInt16(self, *args):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_setVariableUInt16(self, *args)
+        return _pyflamegpu.HostNewAgentAPI_setVariableUInt16(self, *args)
 
     def setVariableUInt32(self, *args):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_setVariableUInt32(self, *args)
+        return _pyflamegpu.HostNewAgentAPI_setVariableUInt32(self, *args)
 
     def setVariableUInt64(self, *args):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_setVariableUInt64(self, *args)
+        return _pyflamegpu.HostNewAgentAPI_setVariableUInt64(self, *args)
 
     def setVariableInt(self, *args):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_setVariableInt(self, *args)
+        return _pyflamegpu.HostNewAgentAPI_setVariableInt(self, *args)
 
     def setVariableUInt(self, *args):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_setVariableUInt(self, *args)
+        return _pyflamegpu.HostNewAgentAPI_setVariableUInt(self, *args)
 
     def setVariableInt8(self, *args):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_setVariableInt8(self, *args)
+        return _pyflamegpu.HostNewAgentAPI_setVariableInt8(self, *args)
 
     def setVariableUInt8(self, *args):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_setVariableUInt8(self, *args)
+        return _pyflamegpu.HostNewAgentAPI_setVariableUInt8(self, *args)
 
     def setVariableChar(self, *args):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_setVariableChar(self, *args)
+        return _pyflamegpu.HostNewAgentAPI_setVariableChar(self, *args)
 
     def setVariableUChar(self, *args):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_setVariableUChar(self, *args)
+        return _pyflamegpu.HostNewAgentAPI_setVariableUChar(self, *args)
 
     def setVariableArrayFloat(self, var_name, val):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_setVariableArrayFloat(self, var_name, val)
+        return _pyflamegpu.HostNewAgentAPI_setVariableArrayFloat(self, var_name, val)
 
     def setVariableArrayDouble(self, var_name, val):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_setVariableArrayDouble(self, var_name, val)
+        return _pyflamegpu.HostNewAgentAPI_setVariableArrayDouble(self, var_name, val)
 
     def setVariableArrayInt16(self, var_name, val):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_setVariableArrayInt16(self, var_name, val)
+        return _pyflamegpu.HostNewAgentAPI_setVariableArrayInt16(self, var_name, val)
 
     def setVariableArrayInt32(self, var_name, val):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_setVariableArrayInt32(self, var_name, val)
+        return _pyflamegpu.HostNewAgentAPI_setVariableArrayInt32(self, var_name, val)
 
     def setVariableArrayInt64(self, var_name, val):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_setVariableArrayInt64(self, var_name, val)
+        return _pyflamegpu.HostNewAgentAPI_setVariableArrayInt64(self, var_name, val)
 
     def setVariableArrayUInt16(self, var_name, val):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_setVariableArrayUInt16(self, var_name, val)
+        return _pyflamegpu.HostNewAgentAPI_setVariableArrayUInt16(self, var_name, val)
 
     def setVariableArrayUInt32(self, var_name, val):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_setVariableArrayUInt32(self, var_name, val)
+        return _pyflamegpu.HostNewAgentAPI_setVariableArrayUInt32(self, var_name, val)
 
     def setVariableArrayUInt64(self, var_name, val):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_setVariableArrayUInt64(self, var_name, val)
+        return _pyflamegpu.HostNewAgentAPI_setVariableArrayUInt64(self, var_name, val)
 
     def setVariableArrayInt(self, var_name, val):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_setVariableArrayInt(self, var_name, val)
+        return _pyflamegpu.HostNewAgentAPI_setVariableArrayInt(self, var_name, val)
 
     def setVariableArrayUInt(self, var_name, val):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_setVariableArrayUInt(self, var_name, val)
+        return _pyflamegpu.HostNewAgentAPI_setVariableArrayUInt(self, var_name, val)
 
     def setVariableArrayInt8(self, var_name, val):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_setVariableArrayInt8(self, var_name, val)
+        return _pyflamegpu.HostNewAgentAPI_setVariableArrayInt8(self, var_name, val)
 
     def setVariableArrayUInt8(self, var_name, val):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_setVariableArrayUInt8(self, var_name, val)
+        return _pyflamegpu.HostNewAgentAPI_setVariableArrayUInt8(self, var_name, val)
 
     def setVariableArrayChar(self, var_name, val):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_setVariableArrayChar(self, var_name, val)
+        return _pyflamegpu.HostNewAgentAPI_setVariableArrayChar(self, var_name, val)
 
     def setVariableArrayUChar(self, var_name, val):
-        return _pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_setVariableArrayUChar(self, var_name, val)
-    __swig_destroy__ = _pyflamegpu.delete_FLAMEGPU_HOST_NEW_AGENT_API
+        return _pyflamegpu.HostNewAgentAPI_setVariableArrayUChar(self, var_name, val)
+    __swig_destroy__ = _pyflamegpu.delete_HostNewAgentAPI
 
-# Register FLAMEGPU_HOST_NEW_AGENT_API in _pyflamegpu:
-_pyflamegpu.FLAMEGPU_HOST_NEW_AGENT_API_swigregister(FLAMEGPU_HOST_NEW_AGENT_API)
+# Register HostNewAgentAPI in _pyflamegpu:
+_pyflamegpu.HostNewAgentAPI_swigregister(HostNewAgentAPI)
 
-class HostAgentInstance(object):
+class HostAgentAPI(object):
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
     __repr__ = _swig_repr
+    __swig_destroy__ = _pyflamegpu.delete_HostAgentAPI
 
     def __init__(self, *args):
-        _pyflamegpu.HostAgentInstance_swiginit(self, _pyflamegpu.new_HostAgentInstance(*args))
+        _pyflamegpu.HostAgentAPI_swiginit(self, _pyflamegpu.new_HostAgentAPI(*args))
+
+    def newAgent(self):
+        r"""
+        Creates a new agent in the current agent and returns an object for configuring it's member variables
+
+        This mode of agent creation is more efficient than manipulating the vector returned by getPopulationData(),
+        as it batches agent creation to a single scatter kernel if possible (e.g. no data dependencies).
+        """
+        return _pyflamegpu.HostAgentAPI_newAgent(self)
 
     def count(self):
-        return _pyflamegpu.HostAgentInstance_count(self)
-    Asc = _pyflamegpu.HostAgentInstance_Asc
-    Desc = _pyflamegpu.HostAgentInstance_Desc
+        return _pyflamegpu.HostAgentAPI_count(self)
+    Asc = _pyflamegpu.HostAgentAPI_Asc
+    Desc = _pyflamegpu.HostAgentAPI_Desc
+
+    def getPopulationData(self):
+        r"""
+        Downloads the current agent state from device into an AgentVector which is returned
+
+        This function is considered expensive, as it triggers a high number of host-device memory transfers.
+        It should be used as a last resort
+        """
+        return _pyflamegpu.HostAgentAPI_getPopulationData(self)
 
     def sortFloat(self, *args):
         r"""
@@ -6283,7 +6450,7 @@ class HostAgentInstance(object):
         Notes: An optional bit subrange [begin_bit, end_bit) of differentiating variable bits can be specified. This can reduce overall sorting overhead and yield a corresponding performance improvement.
         The sort provides no guarantee of stability
         """
-        return _pyflamegpu.HostAgentInstance_sortFloat(self, *args)
+        return _pyflamegpu.HostAgentAPI_sortFloat(self, *args)
 
     def sortDouble(self, *args):
         r"""
@@ -6303,7 +6470,7 @@ class HostAgentInstance(object):
         Notes: An optional bit subrange [begin_bit, end_bit) of differentiating variable bits can be specified. This can reduce overall sorting overhead and yield a corresponding performance improvement.
         The sort provides no guarantee of stability
         """
-        return _pyflamegpu.HostAgentInstance_sortDouble(self, *args)
+        return _pyflamegpu.HostAgentAPI_sortDouble(self, *args)
 
     def sortInt16(self, *args):
         r"""
@@ -6323,7 +6490,7 @@ class HostAgentInstance(object):
         Notes: An optional bit subrange [begin_bit, end_bit) of differentiating variable bits can be specified. This can reduce overall sorting overhead and yield a corresponding performance improvement.
         The sort provides no guarantee of stability
         """
-        return _pyflamegpu.HostAgentInstance_sortInt16(self, *args)
+        return _pyflamegpu.HostAgentAPI_sortInt16(self, *args)
 
     def sortInt32(self, *args):
         r"""
@@ -6343,7 +6510,7 @@ class HostAgentInstance(object):
         Notes: An optional bit subrange [begin_bit, end_bit) of differentiating variable bits can be specified. This can reduce overall sorting overhead and yield a corresponding performance improvement.
         The sort provides no guarantee of stability
         """
-        return _pyflamegpu.HostAgentInstance_sortInt32(self, *args)
+        return _pyflamegpu.HostAgentAPI_sortInt32(self, *args)
 
     def sortInt64(self, *args):
         r"""
@@ -6363,7 +6530,7 @@ class HostAgentInstance(object):
         Notes: An optional bit subrange [begin_bit, end_bit) of differentiating variable bits can be specified. This can reduce overall sorting overhead and yield a corresponding performance improvement.
         The sort provides no guarantee of stability
         """
-        return _pyflamegpu.HostAgentInstance_sortInt64(self, *args)
+        return _pyflamegpu.HostAgentAPI_sortInt64(self, *args)
 
     def sortUInt16(self, *args):
         r"""
@@ -6383,7 +6550,7 @@ class HostAgentInstance(object):
         Notes: An optional bit subrange [begin_bit, end_bit) of differentiating variable bits can be specified. This can reduce overall sorting overhead and yield a corresponding performance improvement.
         The sort provides no guarantee of stability
         """
-        return _pyflamegpu.HostAgentInstance_sortUInt16(self, *args)
+        return _pyflamegpu.HostAgentAPI_sortUInt16(self, *args)
 
     def sortUInt32(self, *args):
         r"""
@@ -6403,7 +6570,7 @@ class HostAgentInstance(object):
         Notes: An optional bit subrange [begin_bit, end_bit) of differentiating variable bits can be specified. This can reduce overall sorting overhead and yield a corresponding performance improvement.
         The sort provides no guarantee of stability
         """
-        return _pyflamegpu.HostAgentInstance_sortUInt32(self, *args)
+        return _pyflamegpu.HostAgentAPI_sortUInt32(self, *args)
 
     def sortUInt64(self, *args):
         r"""
@@ -6423,7 +6590,7 @@ class HostAgentInstance(object):
         Notes: An optional bit subrange [begin_bit, end_bit) of differentiating variable bits can be specified. This can reduce overall sorting overhead and yield a corresponding performance improvement.
         The sort provides no guarantee of stability
         """
-        return _pyflamegpu.HostAgentInstance_sortUInt64(self, *args)
+        return _pyflamegpu.HostAgentAPI_sortUInt64(self, *args)
 
     def sortInt(self, *args):
         r"""
@@ -6443,7 +6610,7 @@ class HostAgentInstance(object):
         Notes: An optional bit subrange [begin_bit, end_bit) of differentiating variable bits can be specified. This can reduce overall sorting overhead and yield a corresponding performance improvement.
         The sort provides no guarantee of stability
         """
-        return _pyflamegpu.HostAgentInstance_sortInt(self, *args)
+        return _pyflamegpu.HostAgentAPI_sortInt(self, *args)
 
     def sortUInt(self, *args):
         r"""
@@ -6463,7 +6630,7 @@ class HostAgentInstance(object):
         Notes: An optional bit subrange [begin_bit, end_bit) of differentiating variable bits can be specified. This can reduce overall sorting overhead and yield a corresponding performance improvement.
         The sort provides no guarantee of stability
         """
-        return _pyflamegpu.HostAgentInstance_sortUInt(self, *args)
+        return _pyflamegpu.HostAgentAPI_sortUInt(self, *args)
 
     def sortInt8(self, *args):
         r"""
@@ -6483,7 +6650,7 @@ class HostAgentInstance(object):
         Notes: An optional bit subrange [begin_bit, end_bit) of differentiating variable bits can be specified. This can reduce overall sorting overhead and yield a corresponding performance improvement.
         The sort provides no guarantee of stability
         """
-        return _pyflamegpu.HostAgentInstance_sortInt8(self, *args)
+        return _pyflamegpu.HostAgentAPI_sortInt8(self, *args)
 
     def sortUInt8(self, *args):
         r"""
@@ -6503,7 +6670,7 @@ class HostAgentInstance(object):
         Notes: An optional bit subrange [begin_bit, end_bit) of differentiating variable bits can be specified. This can reduce overall sorting overhead and yield a corresponding performance improvement.
         The sort provides no guarantee of stability
         """
-        return _pyflamegpu.HostAgentInstance_sortUInt8(self, *args)
+        return _pyflamegpu.HostAgentAPI_sortUInt8(self, *args)
 
     def sortChar(self, *args):
         r"""
@@ -6523,7 +6690,7 @@ class HostAgentInstance(object):
         Notes: An optional bit subrange [begin_bit, end_bit) of differentiating variable bits can be specified. This can reduce overall sorting overhead and yield a corresponding performance improvement.
         The sort provides no guarantee of stability
         """
-        return _pyflamegpu.HostAgentInstance_sortChar(self, *args)
+        return _pyflamegpu.HostAgentAPI_sortChar(self, *args)
 
     def sortUChar(self, *args):
         r"""
@@ -6543,7 +6710,7 @@ class HostAgentInstance(object):
         Notes: An optional bit subrange [begin_bit, end_bit) of differentiating variable bits can be specified. This can reduce overall sorting overhead and yield a corresponding performance improvement.
         The sort provides no guarantee of stability
         """
-        return _pyflamegpu.HostAgentInstance_sortUChar(self, *args)
+        return _pyflamegpu.HostAgentAPI_sortUChar(self, *args)
 
     def countFloat(self, variable, value):
         r"""
@@ -6557,7 +6724,7 @@ class HostAgentInstance(object):
         :raises: InvalidAgentVar If the agent does not contain a variable of the same name
         :raises: InvalidVarType If the passed variable type does not match that specified in the model description hierarchy
         """
-        return _pyflamegpu.HostAgentInstance_countFloat(self, variable, value)
+        return _pyflamegpu.HostAgentAPI_countFloat(self, variable, value)
 
     def countDouble(self, variable, value):
         r"""
@@ -6571,7 +6738,7 @@ class HostAgentInstance(object):
         :raises: InvalidAgentVar If the agent does not contain a variable of the same name
         :raises: InvalidVarType If the passed variable type does not match that specified in the model description hierarchy
         """
-        return _pyflamegpu.HostAgentInstance_countDouble(self, variable, value)
+        return _pyflamegpu.HostAgentAPI_countDouble(self, variable, value)
 
     def countInt16(self, variable, value):
         r"""
@@ -6585,7 +6752,7 @@ class HostAgentInstance(object):
         :raises: InvalidAgentVar If the agent does not contain a variable of the same name
         :raises: InvalidVarType If the passed variable type does not match that specified in the model description hierarchy
         """
-        return _pyflamegpu.HostAgentInstance_countInt16(self, variable, value)
+        return _pyflamegpu.HostAgentAPI_countInt16(self, variable, value)
 
     def countInt32(self, variable, value):
         r"""
@@ -6599,7 +6766,7 @@ class HostAgentInstance(object):
         :raises: InvalidAgentVar If the agent does not contain a variable of the same name
         :raises: InvalidVarType If the passed variable type does not match that specified in the model description hierarchy
         """
-        return _pyflamegpu.HostAgentInstance_countInt32(self, variable, value)
+        return _pyflamegpu.HostAgentAPI_countInt32(self, variable, value)
 
     def countInt64(self, variable, value):
         r"""
@@ -6613,7 +6780,7 @@ class HostAgentInstance(object):
         :raises: InvalidAgentVar If the agent does not contain a variable of the same name
         :raises: InvalidVarType If the passed variable type does not match that specified in the model description hierarchy
         """
-        return _pyflamegpu.HostAgentInstance_countInt64(self, variable, value)
+        return _pyflamegpu.HostAgentAPI_countInt64(self, variable, value)
 
     def countUInt16(self, variable, value):
         r"""
@@ -6627,7 +6794,7 @@ class HostAgentInstance(object):
         :raises: InvalidAgentVar If the agent does not contain a variable of the same name
         :raises: InvalidVarType If the passed variable type does not match that specified in the model description hierarchy
         """
-        return _pyflamegpu.HostAgentInstance_countUInt16(self, variable, value)
+        return _pyflamegpu.HostAgentAPI_countUInt16(self, variable, value)
 
     def countUInt32(self, variable, value):
         r"""
@@ -6641,7 +6808,7 @@ class HostAgentInstance(object):
         :raises: InvalidAgentVar If the agent does not contain a variable of the same name
         :raises: InvalidVarType If the passed variable type does not match that specified in the model description hierarchy
         """
-        return _pyflamegpu.HostAgentInstance_countUInt32(self, variable, value)
+        return _pyflamegpu.HostAgentAPI_countUInt32(self, variable, value)
 
     def countUInt64(self, variable, value):
         r"""
@@ -6655,7 +6822,7 @@ class HostAgentInstance(object):
         :raises: InvalidAgentVar If the agent does not contain a variable of the same name
         :raises: InvalidVarType If the passed variable type does not match that specified in the model description hierarchy
         """
-        return _pyflamegpu.HostAgentInstance_countUInt64(self, variable, value)
+        return _pyflamegpu.HostAgentAPI_countUInt64(self, variable, value)
 
     def countInt(self, variable, value):
         r"""
@@ -6669,7 +6836,7 @@ class HostAgentInstance(object):
         :raises: InvalidAgentVar If the agent does not contain a variable of the same name
         :raises: InvalidVarType If the passed variable type does not match that specified in the model description hierarchy
         """
-        return _pyflamegpu.HostAgentInstance_countInt(self, variable, value)
+        return _pyflamegpu.HostAgentAPI_countInt(self, variable, value)
 
     def countUInt(self, variable, value):
         r"""
@@ -6683,7 +6850,7 @@ class HostAgentInstance(object):
         :raises: InvalidAgentVar If the agent does not contain a variable of the same name
         :raises: InvalidVarType If the passed variable type does not match that specified in the model description hierarchy
         """
-        return _pyflamegpu.HostAgentInstance_countUInt(self, variable, value)
+        return _pyflamegpu.HostAgentAPI_countUInt(self, variable, value)
 
     def countInt8(self, variable, value):
         r"""
@@ -6697,7 +6864,7 @@ class HostAgentInstance(object):
         :raises: InvalidAgentVar If the agent does not contain a variable of the same name
         :raises: InvalidVarType If the passed variable type does not match that specified in the model description hierarchy
         """
-        return _pyflamegpu.HostAgentInstance_countInt8(self, variable, value)
+        return _pyflamegpu.HostAgentAPI_countInt8(self, variable, value)
 
     def countUInt8(self, variable, value):
         r"""
@@ -6711,7 +6878,7 @@ class HostAgentInstance(object):
         :raises: InvalidAgentVar If the agent does not contain a variable of the same name
         :raises: InvalidVarType If the passed variable type does not match that specified in the model description hierarchy
         """
-        return _pyflamegpu.HostAgentInstance_countUInt8(self, variable, value)
+        return _pyflamegpu.HostAgentAPI_countUInt8(self, variable, value)
 
     def countChar(self, variable, value):
         r"""
@@ -6725,7 +6892,7 @@ class HostAgentInstance(object):
         :raises: InvalidAgentVar If the agent does not contain a variable of the same name
         :raises: InvalidVarType If the passed variable type does not match that specified in the model description hierarchy
         """
-        return _pyflamegpu.HostAgentInstance_countChar(self, variable, value)
+        return _pyflamegpu.HostAgentAPI_countChar(self, variable, value)
 
     def countUChar(self, variable, value):
         r"""
@@ -6739,7 +6906,7 @@ class HostAgentInstance(object):
         :raises: InvalidAgentVar If the agent does not contain a variable of the same name
         :raises: InvalidVarType If the passed variable type does not match that specified in the model description hierarchy
         """
-        return _pyflamegpu.HostAgentInstance_countUChar(self, variable, value)
+        return _pyflamegpu.HostAgentAPI_countUChar(self, variable, value)
 
     def minFloat(self, variable):
         r"""
@@ -6751,7 +6918,7 @@ class HostAgentInstance(object):
         :raises: InvalidAgentVar If the agent does not contain a variable of the same name
         :raises: InvalidVarType If the passed variable type does not match that specified in the model description hierarchy
         """
-        return _pyflamegpu.HostAgentInstance_minFloat(self, variable)
+        return _pyflamegpu.HostAgentAPI_minFloat(self, variable)
 
     def minDouble(self, variable):
         r"""
@@ -6763,7 +6930,7 @@ class HostAgentInstance(object):
         :raises: InvalidAgentVar If the agent does not contain a variable of the same name
         :raises: InvalidVarType If the passed variable type does not match that specified in the model description hierarchy
         """
-        return _pyflamegpu.HostAgentInstance_minDouble(self, variable)
+        return _pyflamegpu.HostAgentAPI_minDouble(self, variable)
 
     def minInt16(self, variable):
         r"""
@@ -6775,7 +6942,7 @@ class HostAgentInstance(object):
         :raises: InvalidAgentVar If the agent does not contain a variable of the same name
         :raises: InvalidVarType If the passed variable type does not match that specified in the model description hierarchy
         """
-        return _pyflamegpu.HostAgentInstance_minInt16(self, variable)
+        return _pyflamegpu.HostAgentAPI_minInt16(self, variable)
 
     def minInt32(self, variable):
         r"""
@@ -6787,7 +6954,7 @@ class HostAgentInstance(object):
         :raises: InvalidAgentVar If the agent does not contain a variable of the same name
         :raises: InvalidVarType If the passed variable type does not match that specified in the model description hierarchy
         """
-        return _pyflamegpu.HostAgentInstance_minInt32(self, variable)
+        return _pyflamegpu.HostAgentAPI_minInt32(self, variable)
 
     def minInt64(self, variable):
         r"""
@@ -6799,7 +6966,7 @@ class HostAgentInstance(object):
         :raises: InvalidAgentVar If the agent does not contain a variable of the same name
         :raises: InvalidVarType If the passed variable type does not match that specified in the model description hierarchy
         """
-        return _pyflamegpu.HostAgentInstance_minInt64(self, variable)
+        return _pyflamegpu.HostAgentAPI_minInt64(self, variable)
 
     def minUInt16(self, variable):
         r"""
@@ -6811,7 +6978,7 @@ class HostAgentInstance(object):
         :raises: InvalidAgentVar If the agent does not contain a variable of the same name
         :raises: InvalidVarType If the passed variable type does not match that specified in the model description hierarchy
         """
-        return _pyflamegpu.HostAgentInstance_minUInt16(self, variable)
+        return _pyflamegpu.HostAgentAPI_minUInt16(self, variable)
 
     def minUInt32(self, variable):
         r"""
@@ -6823,7 +6990,7 @@ class HostAgentInstance(object):
         :raises: InvalidAgentVar If the agent does not contain a variable of the same name
         :raises: InvalidVarType If the passed variable type does not match that specified in the model description hierarchy
         """
-        return _pyflamegpu.HostAgentInstance_minUInt32(self, variable)
+        return _pyflamegpu.HostAgentAPI_minUInt32(self, variable)
 
     def minUInt64(self, variable):
         r"""
@@ -6835,7 +7002,7 @@ class HostAgentInstance(object):
         :raises: InvalidAgentVar If the agent does not contain a variable of the same name
         :raises: InvalidVarType If the passed variable type does not match that specified in the model description hierarchy
         """
-        return _pyflamegpu.HostAgentInstance_minUInt64(self, variable)
+        return _pyflamegpu.HostAgentAPI_minUInt64(self, variable)
 
     def minInt(self, variable):
         r"""
@@ -6847,7 +7014,7 @@ class HostAgentInstance(object):
         :raises: InvalidAgentVar If the agent does not contain a variable of the same name
         :raises: InvalidVarType If the passed variable type does not match that specified in the model description hierarchy
         """
-        return _pyflamegpu.HostAgentInstance_minInt(self, variable)
+        return _pyflamegpu.HostAgentAPI_minInt(self, variable)
 
     def minUInt(self, variable):
         r"""
@@ -6859,7 +7026,7 @@ class HostAgentInstance(object):
         :raises: InvalidAgentVar If the agent does not contain a variable of the same name
         :raises: InvalidVarType If the passed variable type does not match that specified in the model description hierarchy
         """
-        return _pyflamegpu.HostAgentInstance_minUInt(self, variable)
+        return _pyflamegpu.HostAgentAPI_minUInt(self, variable)
 
     def minInt8(self, variable):
         r"""
@@ -6871,7 +7038,7 @@ class HostAgentInstance(object):
         :raises: InvalidAgentVar If the agent does not contain a variable of the same name
         :raises: InvalidVarType If the passed variable type does not match that specified in the model description hierarchy
         """
-        return _pyflamegpu.HostAgentInstance_minInt8(self, variable)
+        return _pyflamegpu.HostAgentAPI_minInt8(self, variable)
 
     def minUInt8(self, variable):
         r"""
@@ -6883,7 +7050,7 @@ class HostAgentInstance(object):
         :raises: InvalidAgentVar If the agent does not contain a variable of the same name
         :raises: InvalidVarType If the passed variable type does not match that specified in the model description hierarchy
         """
-        return _pyflamegpu.HostAgentInstance_minUInt8(self, variable)
+        return _pyflamegpu.HostAgentAPI_minUInt8(self, variable)
 
     def minChar(self, variable):
         r"""
@@ -6895,7 +7062,7 @@ class HostAgentInstance(object):
         :raises: InvalidAgentVar If the agent does not contain a variable of the same name
         :raises: InvalidVarType If the passed variable type does not match that specified in the model description hierarchy
         """
-        return _pyflamegpu.HostAgentInstance_minChar(self, variable)
+        return _pyflamegpu.HostAgentAPI_minChar(self, variable)
 
     def minUChar(self, variable):
         r"""
@@ -6907,7 +7074,7 @@ class HostAgentInstance(object):
         :raises: InvalidAgentVar If the agent does not contain a variable of the same name
         :raises: InvalidVarType If the passed variable type does not match that specified in the model description hierarchy
         """
-        return _pyflamegpu.HostAgentInstance_minUChar(self, variable)
+        return _pyflamegpu.HostAgentAPI_minUChar(self, variable)
 
     def maxFloat(self, variable):
         r"""
@@ -6919,7 +7086,7 @@ class HostAgentInstance(object):
         :raises: InvalidAgentVar If the agent does not contain a variable of the same name
         :raises: InvalidVarType If the passed variable type does not match that specified in the model description hierarchy
         """
-        return _pyflamegpu.HostAgentInstance_maxFloat(self, variable)
+        return _pyflamegpu.HostAgentAPI_maxFloat(self, variable)
 
     def maxDouble(self, variable):
         r"""
@@ -6931,7 +7098,7 @@ class HostAgentInstance(object):
         :raises: InvalidAgentVar If the agent does not contain a variable of the same name
         :raises: InvalidVarType If the passed variable type does not match that specified in the model description hierarchy
         """
-        return _pyflamegpu.HostAgentInstance_maxDouble(self, variable)
+        return _pyflamegpu.HostAgentAPI_maxDouble(self, variable)
 
     def maxInt16(self, variable):
         r"""
@@ -6943,7 +7110,7 @@ class HostAgentInstance(object):
         :raises: InvalidAgentVar If the agent does not contain a variable of the same name
         :raises: InvalidVarType If the passed variable type does not match that specified in the model description hierarchy
         """
-        return _pyflamegpu.HostAgentInstance_maxInt16(self, variable)
+        return _pyflamegpu.HostAgentAPI_maxInt16(self, variable)
 
     def maxInt32(self, variable):
         r"""
@@ -6955,7 +7122,7 @@ class HostAgentInstance(object):
         :raises: InvalidAgentVar If the agent does not contain a variable of the same name
         :raises: InvalidVarType If the passed variable type does not match that specified in the model description hierarchy
         """
-        return _pyflamegpu.HostAgentInstance_maxInt32(self, variable)
+        return _pyflamegpu.HostAgentAPI_maxInt32(self, variable)
 
     def maxInt64(self, variable):
         r"""
@@ -6967,7 +7134,7 @@ class HostAgentInstance(object):
         :raises: InvalidAgentVar If the agent does not contain a variable of the same name
         :raises: InvalidVarType If the passed variable type does not match that specified in the model description hierarchy
         """
-        return _pyflamegpu.HostAgentInstance_maxInt64(self, variable)
+        return _pyflamegpu.HostAgentAPI_maxInt64(self, variable)
 
     def maxUInt16(self, variable):
         r"""
@@ -6979,7 +7146,7 @@ class HostAgentInstance(object):
         :raises: InvalidAgentVar If the agent does not contain a variable of the same name
         :raises: InvalidVarType If the passed variable type does not match that specified in the model description hierarchy
         """
-        return _pyflamegpu.HostAgentInstance_maxUInt16(self, variable)
+        return _pyflamegpu.HostAgentAPI_maxUInt16(self, variable)
 
     def maxUInt32(self, variable):
         r"""
@@ -6991,7 +7158,7 @@ class HostAgentInstance(object):
         :raises: InvalidAgentVar If the agent does not contain a variable of the same name
         :raises: InvalidVarType If the passed variable type does not match that specified in the model description hierarchy
         """
-        return _pyflamegpu.HostAgentInstance_maxUInt32(self, variable)
+        return _pyflamegpu.HostAgentAPI_maxUInt32(self, variable)
 
     def maxUInt64(self, variable):
         r"""
@@ -7003,7 +7170,7 @@ class HostAgentInstance(object):
         :raises: InvalidAgentVar If the agent does not contain a variable of the same name
         :raises: InvalidVarType If the passed variable type does not match that specified in the model description hierarchy
         """
-        return _pyflamegpu.HostAgentInstance_maxUInt64(self, variable)
+        return _pyflamegpu.HostAgentAPI_maxUInt64(self, variable)
 
     def maxInt(self, variable):
         r"""
@@ -7015,7 +7182,7 @@ class HostAgentInstance(object):
         :raises: InvalidAgentVar If the agent does not contain a variable of the same name
         :raises: InvalidVarType If the passed variable type does not match that specified in the model description hierarchy
         """
-        return _pyflamegpu.HostAgentInstance_maxInt(self, variable)
+        return _pyflamegpu.HostAgentAPI_maxInt(self, variable)
 
     def maxUInt(self, variable):
         r"""
@@ -7027,7 +7194,7 @@ class HostAgentInstance(object):
         :raises: InvalidAgentVar If the agent does not contain a variable of the same name
         :raises: InvalidVarType If the passed variable type does not match that specified in the model description hierarchy
         """
-        return _pyflamegpu.HostAgentInstance_maxUInt(self, variable)
+        return _pyflamegpu.HostAgentAPI_maxUInt(self, variable)
 
     def maxInt8(self, variable):
         r"""
@@ -7039,7 +7206,7 @@ class HostAgentInstance(object):
         :raises: InvalidAgentVar If the agent does not contain a variable of the same name
         :raises: InvalidVarType If the passed variable type does not match that specified in the model description hierarchy
         """
-        return _pyflamegpu.HostAgentInstance_maxInt8(self, variable)
+        return _pyflamegpu.HostAgentAPI_maxInt8(self, variable)
 
     def maxUInt8(self, variable):
         r"""
@@ -7051,7 +7218,7 @@ class HostAgentInstance(object):
         :raises: InvalidAgentVar If the agent does not contain a variable of the same name
         :raises: InvalidVarType If the passed variable type does not match that specified in the model description hierarchy
         """
-        return _pyflamegpu.HostAgentInstance_maxUInt8(self, variable)
+        return _pyflamegpu.HostAgentAPI_maxUInt8(self, variable)
 
     def maxChar(self, variable):
         r"""
@@ -7063,7 +7230,7 @@ class HostAgentInstance(object):
         :raises: InvalidAgentVar If the agent does not contain a variable of the same name
         :raises: InvalidVarType If the passed variable type does not match that specified in the model description hierarchy
         """
-        return _pyflamegpu.HostAgentInstance_maxChar(self, variable)
+        return _pyflamegpu.HostAgentAPI_maxChar(self, variable)
 
     def maxUChar(self, variable):
         r"""
@@ -7075,7 +7242,7 @@ class HostAgentInstance(object):
         :raises: InvalidAgentVar If the agent does not contain a variable of the same name
         :raises: InvalidVarType If the passed variable type does not match that specified in the model description hierarchy
         """
-        return _pyflamegpu.HostAgentInstance_maxUChar(self, variable)
+        return _pyflamegpu.HostAgentAPI_maxUChar(self, variable)
 
     def sumFloat(self, variable):
         r"""
@@ -7087,7 +7254,7 @@ class HostAgentInstance(object):
         :raises: InvalidAgentVar If the agent does not contain a variable of the same name
         :raises: InvalidVarType If the passed variable type does not match that specified in the model description hierarchy
         """
-        return _pyflamegpu.HostAgentInstance_sumFloat(self, variable)
+        return _pyflamegpu.HostAgentAPI_sumFloat(self, variable)
 
     def sumDouble(self, variable):
         r"""
@@ -7099,47 +7266,46 @@ class HostAgentInstance(object):
         :raises: InvalidAgentVar If the agent does not contain a variable of the same name
         :raises: InvalidVarType If the passed variable type does not match that specified in the model description hierarchy
         """
-        return _pyflamegpu.HostAgentInstance_sumDouble(self, variable)
+        return _pyflamegpu.HostAgentAPI_sumDouble(self, variable)
 
     def sumInt8(self, variable):
-        return _pyflamegpu.HostAgentInstance_sumInt8(self, variable)
+        return _pyflamegpu.HostAgentAPI_sumInt8(self, variable)
 
     def sumUInt8(self, variable):
-        return _pyflamegpu.HostAgentInstance_sumUInt8(self, variable)
+        return _pyflamegpu.HostAgentAPI_sumUInt8(self, variable)
 
     def sumInt16(self, variable):
-        return _pyflamegpu.HostAgentInstance_sumInt16(self, variable)
+        return _pyflamegpu.HostAgentAPI_sumInt16(self, variable)
 
     def sumUInt16(self, variable):
-        return _pyflamegpu.HostAgentInstance_sumUInt16(self, variable)
+        return _pyflamegpu.HostAgentAPI_sumUInt16(self, variable)
 
     def sumInt32(self, variable):
-        return _pyflamegpu.HostAgentInstance_sumInt32(self, variable)
+        return _pyflamegpu.HostAgentAPI_sumInt32(self, variable)
 
     def sumUInt32(self, variable):
-        return _pyflamegpu.HostAgentInstance_sumUInt32(self, variable)
+        return _pyflamegpu.HostAgentAPI_sumUInt32(self, variable)
 
     def sumInt64(self, variable):
-        return _pyflamegpu.HostAgentInstance_sumInt64(self, variable)
+        return _pyflamegpu.HostAgentAPI_sumInt64(self, variable)
 
     def sumUInt64(self, variable):
-        return _pyflamegpu.HostAgentInstance_sumUInt64(self, variable)
+        return _pyflamegpu.HostAgentAPI_sumUInt64(self, variable)
 
     def sumInt(self, variable):
-        return _pyflamegpu.HostAgentInstance_sumInt(self, variable)
+        return _pyflamegpu.HostAgentAPI_sumInt(self, variable)
 
     def sumUInt(self, variable):
-        return _pyflamegpu.HostAgentInstance_sumUInt(self, variable)
-    __swig_destroy__ = _pyflamegpu.delete_HostAgentInstance
+        return _pyflamegpu.HostAgentAPI_sumUInt(self, variable)
 
-# Register HostAgentInstance in _pyflamegpu:
-_pyflamegpu.HostAgentInstance_swigregister(HostAgentInstance)
+# Register HostAgentAPI in _pyflamegpu:
+_pyflamegpu.HostAgentAPI_swigregister(HostAgentAPI)
 
 class HostRandom(object):
     r"""
     Utility for accessing random generation within host functions
     This is prefered over using std random, as it uses a common seed with the device random
-    This should only be instantiated by FLAMEGPU_HOST_API
+    This should only be instantiated by HostAPI
     """
 
     thisown = property(lambda x: x.this.own(), lambda x, v: x.this.own(v), doc="The membership flag")
@@ -7233,7 +7399,7 @@ class HostEnvironment(object):
     This class provides host function access to Environment Properties
     It acts as a wrapper to EnvironmentManager, proxying calls, converting variable name and model_name into a combined hash
     Pairs with EnvironmentManager, AgentEnvironment and EnvironmentDescription
-    This class is only to be constructed by FLAMEGPU_HOST_API
+    This class is only to be constructed by HostAPI
     Notes: Not thread-safe
     """
 

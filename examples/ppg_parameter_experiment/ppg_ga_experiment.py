@@ -1157,6 +1157,42 @@ if ENSEMBLE:
 else:
   if PARAMETER_EXPERIMENT:
     experiment_initial_state_generator = exp.InitialStateGenerator();
+
+    experiment_initial_state_generator.setGlobalFloat("PREY_REPRODUCTION_CHANCE",(0.01,0.1));
+    experiment_initial_state_generator.setGlobalFloat("PREDATOR_REPRODUCTION_CHANCE",(0.01,0.1));
+    experiment_initial_state_generator.setGlobalInt("GAIN_FROM_FOOD_PREDATOR",(10,200));
+    experiment_initial_state_generator.setGlobalInt("GAIN_FROM_FOOD_PREY",(10,200));
+    experiment_initial_state_generator.setGlobalInt("GRASS_REGROW_CYCLES",(10,200));
+
+    experiment_initial_state_generator.setGlobalFloat("MIN_POSITION", -1.0);
+    experiment_initial_state_generator.setGlobalFloat("MAX_POSITION", 1.0);
+    experiment_initial_state_generator.setGlobalFloat("BOUNDS_WIDTH", 2.0);
+    experiment_initial_state_generator.setGlobalFloat("PRED_PREY_INTERACTION_RADIUS", 0.1);
+    experiment_initial_state_generator.setGlobalFloat("PREY_GROUP_COHESION_RADIUS", 0.2);
+    experiment_initial_state_generator.setGlobalFloat("SAME_SPECIES_AVOIDANCE_RADIUS", 0.035);
+    experiment_initial_state_generator.setGlobalFloat("GRASS_EAT_DISTANCE", 0.02);
+    experiment_initial_state_generator.setGlobalFloat("PREDATOR_KILL_DISTANCE", 0.02);
+    experiment_initial_state_generator.setGlobalFloat("DELTA_TIME", 0.001);
+
+    env.newPropertyFloat("MIN_POSITION", -1.0);
+env.newPropertyFloat("MAX_POSITION", +1.0);
+env.newPropertyFloat("BOUNDS_WIDTH", 2.0);
+
+# Interaction Radii
+env.newPropertyFloat("PI", 3.1415);
+env.newPropertyFloat("PRED_PREY_INTERACTION_RADIUS", 0.1);
+env.newPropertyFloat("PREY_GROUP_COHESION_RADIUS", 0.2);
+env.newPropertyFloat("SAME_SPECIES_AVOIDANCE_RADIUS", 0.035);
+env.newPropertyFloat("GRASS_EAT_DISTANCE", 0.02);
+env.newPropertyFloat("PREDATOR_KILL_DISTANCE", 0.02);
+
+# Other globals
+env.newPropertyFloat("DELTA_TIME", 0.001);
+env.newPropertyFloat("PRED_SPEED_ADVANTAGE", 2.0);
+env.newPropertyFloat("MIN_SPEED", -1.0);
+env.newPropertyFloat("MAX_SPEED", +1.0);
+env.newPropertyFloat("SPEED_DIFFERENCE", 2.0);
+
     prey_population = exp.AgentPopulation("Prey");
     predator_population = exp.AgentPopulation("Predator");
     grass_population = exp.AgentPopulation("Grass");
@@ -1166,19 +1202,36 @@ else:
     prey_population.setVariableRandomPerAgent("y",(-1.0,1.0));
     prey_population.setVariableRandomPerAgent("fx",(-1.0,1.0));
     prey_population.setVariableRandomPerAgent("fy",(-1.0,1.0));
-    prey_population.setVariableFloat("steer_x",(-1.0,1.0));
-    prey_population.setVariableFloat("steer_y",(-1.0,1.0));
-    prey_population.setVariableRandomPerAgent("fy",(-1.0,1.0));
+    prey_population.setVariableFloat("steer_x",0.0);
+    prey_population.setVariableFloat("steer_x",0.0);
+    prey_population.setVariableFloat("type",2.0);
+    prey_population.setVariableRandomPerAgent("life",(20,200), distribution=random.randint);
 
     predator_population.setPopSizeRandom((32,128));
     predator_population.setVariableRandomPerAgent("x",(-1.0,1.0));
     predator_population.setVariableRandomPerAgent("y",(-1.0,1.0));
     predator_population.setVariableRandomPerAgent("fx",(-1.0,1.0));
     predator_population.setVariableRandomPerAgent("fy",(-1.0,1.0));
+    predator_population.setVariable("steer_x",0.0);
+    predator_population.setVariable("steer_x",0.0);
+    predator_population.setVariable("type",0.0);
+    predator_population.setVariableRandomPerAgent("life",(20,200), distribution=random.randint);
 
     grass_population.setPopSizeRandom((256,1024));
     grass_population.setVariableRandomPerAgent("x",(-1.0,1.0));
     grass_population.setVariableRandomPerAgent("y",(-1.0,1.0));
+    grass_population.setVariable("type",1.0);
+    grass_population.setVariable("dead_cycles",0);
+
+    experiment_initial_state_generator.addAgentPopulation(prey_population);
+    experiment_initial_state_generator.addAgentPopulation(predator_population);
+    experiment_initial_state_generator.addAgentPopulation(grass_population);
+
+    experiment = exp.Experiment("ppg_test_experiment");
+    experiment.setModel(model);
+    experiment.initialStateGenerator(experiment_initial_state_generator);
+    experiment.setSimulationSteps(50);
+    experiment.setRuns(3);
     simulation = None;
   else:
     simulation = pyflamegpu.CUDASimulation(model);

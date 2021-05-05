@@ -1018,7 +1018,7 @@ class initPreyPopulation(pyflamegpu.HostFunctionCallback):
     max_speed = FLAMEGPU.environment.getPropertyFloat("MAX_SPEED");
     current_id = FLAMEGPU.environment.getPropertyUInt("CURRENT_ID");
     for i in range(populationSize):
-      instance = FLAMEGPU.newAgent("Prey");
+      instance = FLAMEGPU.agent("Prey").newAgent();
       instance.setVariableInt("id", current_id+i);
       instance.setVariableFloat("x", random.uniform(min_pos, max_pos));
       instance.setVariableFloat("y", random.uniform(min_pos, max_pos));
@@ -1040,7 +1040,7 @@ class initPredatorPopulation(pyflamegpu.HostFunctionCallback):
     max_speed = FLAMEGPU.environment.getPropertyFloat("MAX_SPEED");
     current_id = FLAMEGPU.environment.getPropertyUInt("CURRENT_ID");
     for i in range(populationSize):
-      instance = FLAMEGPU.newAgent("Predator");
+      instance = FLAMEGPU.agent("Predator").newAgent();
       instance.setVariableInt("id", current_id+i);
       instance.setVariableFloat("x", random.uniform(min_pos, max_pos));
       instance.setVariableFloat("y", random.uniform(min_pos, max_pos));
@@ -1060,7 +1060,7 @@ class initGrassPopulation(pyflamegpu.HostFunctionCallback):
     max_pos = FLAMEGPU.environment.getPropertyFloat("MAX_POSITION");
     current_id = FLAMEGPU.environment.getPropertyUInt("CURRENT_ID");
     for i in range(populationSize):
-      instance = FLAMEGPU.newAgent("Grass");
+      instance = FLAMEGPU.agent("Grass").newAgent();
       instance.setVariableInt("id", current_id+i);
       instance.setVariableFloat("x", random.uniform(min_pos, max_pos));
       instance.setVariableFloat("y", random.uniform(min_pos, max_pos));
