@@ -1177,7 +1177,8 @@ if ENSEMBLE:
   simulation = pyflamegpu.CUDAEnsemble(model);
 else:
   simulation = pyflamegpu.CUDASimulation(model);
-  simulation.SimulationConfig().steps = STEPS;
+  if not VISUALISATION:
+    simulation.SimulationConfig().steps = STEPS;
 
 simulation.setStepLog(step_log);
 simulation.setExitLog(logging_config)
