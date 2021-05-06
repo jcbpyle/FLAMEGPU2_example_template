@@ -1093,7 +1093,7 @@ class IncrementCounter(pyflamegpu.HostFunctionCallback):
     # Override C++ method: virtual void run(FLAMEGPU_HOST_API*);
     def run(self, host_api):
         global externalCounter
-        print ("Hello from step function")
+        print ("Hello from step function on step:",externalCounter)
         externalCounter += 1
 inc = IncrementCounter()
 model.addStepFunctionCallback(inc)
