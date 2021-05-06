@@ -7,7 +7,7 @@ from mpl_toolkits.mplot3d import Axes3D
 sns.set()
 
 # Set whether to run single model or ensemble, agent population size, and simulation steps 
-ENSEMBLE = True;
+ENSEMBLE = False;
 ENSEMBLE_RUNS = 3;
 PREY_POPULATION_SIZE = 64;
 PREDATOR_POPULATION_SIZE = 10;
@@ -1078,6 +1078,25 @@ model.addInitFunctionCallback(initialPredatorPopulation);
 initialGrassPopulation = initGrassPopulation();
 model.addInitFunctionCallback(initialGrassPopulation);
 
+
+externalCounter = 0
+class IncrementCounter(pyflamegpu.HostFunctionCallback):
+    """
+    pyflamegpu requires step functions to be a class which extends the StepFunction base class.
+    This class must extend the handle function
+    """
+
+    # Define Python class 'constructor'
+    def __init__(self):
+        super().__init__()
+
+    # Override C++ method: virtual void run(FLAMEGPU_HOST_API*);
+    def run(self, host_api):
+        global externalCounter
+        print ("Hello from step function")
+        externalCounter += 1
+inc = IncrementCounter()
+model.addStepFunctionCallback(inc)
 """
   Control flow
 """    
@@ -1155,6 +1174,8 @@ if ENSEMBLE:
   simulation = pyflamegpu.CUDAEnsemble(model);
 else:
   simulation = pyflamegpu.CUDASimulation(model);
+  simulation.SimulationConfig().steps = STEPS;
+  print(simulation.getSimulationConfig().steps)
 
 simulation.setStepLog(step_log);
 simulation.setExitLog(logging_config)
