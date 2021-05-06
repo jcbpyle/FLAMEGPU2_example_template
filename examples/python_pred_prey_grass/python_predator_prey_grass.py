@@ -1078,25 +1078,28 @@ model.addInitFunctionCallback(initialPredatorPopulation);
 initialGrassPopulation = initGrassPopulation();
 model.addInitFunctionCallback(initialGrassPopulation);
 
+"""
+  Example step function for later reference
+"""
+# externalCounter = 0
+# class IncrementCounter(pyflamegpu.HostFunctionCallback):
+#     """
+#     pyflamegpu requires step functions to be a class which extends the StepFunction base class.
+#     This class must extend the handle function
+#     """
 
-externalCounter = 0
-class IncrementCounter(pyflamegpu.HostFunctionCallback):
-    """
-    pyflamegpu requires step functions to be a class which extends the StepFunction base class.
-    This class must extend the handle function
-    """
+#     # Define Python class 'constructor'
+#     def __init__(self):
+#         super().__init__()
 
-    # Define Python class 'constructor'
-    def __init__(self):
-        super().__init__()
+#     # Override C++ method: virtual void run(FLAMEGPU_HOST_API*);
+#     def run(self, host_api):
+#         global externalCounter
+#         print ("Hello from step function on step:",externalCounter)
+#         externalCounter += 1
+# inc = IncrementCounter()
+# model.addStepFunctionCallback(inc)
 
-    # Override C++ method: virtual void run(FLAMEGPU_HOST_API*);
-    def run(self, host_api):
-        global externalCounter
-        print ("Hello from step function on step:",externalCounter)
-        externalCounter += 1
-inc = IncrementCounter()
-model.addStepFunctionCallback(inc)
 """
   Control flow
 """    
@@ -1175,7 +1178,6 @@ if ENSEMBLE:
 else:
   simulation = pyflamegpu.CUDASimulation(model);
   simulation.SimulationConfig().steps = STEPS;
-  print(simulation.getSimulationConfig().steps)
 
 simulation.setStepLog(step_log);
 simulation.setExitLog(logging_config)
@@ -1208,11 +1210,6 @@ if pyflamegpu.VISUALISATION and VISUALISATION and not ENSEMBLE:
     circ_uagrass_agt.setModelScale(env.getPropertyFloat("PRED_PREY_INTERACTION_RADIUS")/7.5);
     circ_uagrass_agt.setColor(pyflamegpu.WHITE);
     visualisation.activate();
-
-"""
-  Initialise Model
-"""
-simulation.initialise(sys.argv);
 
 """
   Execution
