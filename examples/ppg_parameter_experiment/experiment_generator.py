@@ -113,12 +113,22 @@ class Experiment(object):
 		if (self.runs>1):
 			print("Beginning experiment ensemble");
 			simulation.simulate(run_plan_vector);
+			if not self.log==None:
+				print("ensemble logging")
+				self.sim_log = simulation.getLogs();
+				for log in self.sim_log:
+					steps = log.getStepLog();
+					for step in steps:
+						print()
+						print("prey",step.getAgent("Prey").getCount());
+						print("predator",step.getAgent("Predator").getCount());
+						print(type(self.sim_log))
 		else:
 			simulation.simulate();
-		if not self.log==None:
-			self.sim_log = simulation.getStepLogs();
+			if not self.log==None:
+				self.sim_log = simulation.getRunLog();
+		
 		print("Completed experiment:", self.name);
-		return
 
 class InitialStateGenerator(object):
 	r"""This class allows users to define the construction of a valid inital state for a FLAME-GPU2 model including global variables and agent populations
@@ -603,6 +613,7 @@ class Search(object):
 		print("Initial population evalauation (Generation 0)")
 		#Evaluate initial population
 		initial_fitnesses = self.__evaluate_population(population) if self.eval_func==None else self.eval_func(population);
+		print("initial_fitnesses",initial_fitnesses)
 		candidates_evaluated = self.mu
 		#Record results per GA in file named the same the current seed being used for the random module
 		unique_run_seed = random.randrange(sys.maxsize)

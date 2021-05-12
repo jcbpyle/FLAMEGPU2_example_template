@@ -1141,6 +1141,30 @@ step_log = pyflamegpu.StepLoggingConfig(logging_config);
 step_log.setFrequency(1);
 
 
+def evaluator(pop):
+  n = len(pop);
+  evaluation = [0.0]*n;
+  experiment.begin();
+  log_count = 0
+  print(type(experiment.sim_log))
+  for log in experiment.sim_log:
+    print(type(log))
+    steps = log.getStepLog();
+    agent_counter = 0
+    for step in steps:
+      print()
+      print(type(step))
+      print("prey",step.getAgent("Prey").getCount());
+      print("predator",step.getAgent("Predator").getCount());
+      p1_log = step.getAgent("Prey");
+      p2_log = step.getAgent("Predator");
+      agent_counter += p1_log.getCount() + p2_log.getCount();
+    evaluation[log_count] = agent_counter;
+    log_count += 1;
+  print("evaluation",evaluation)
+  return evaluation
+
+
 """
   Create Model Runner
 """  
@@ -1219,23 +1243,9 @@ else:
     experiment.setLog(step_log);
     ga_search = exp.Search();
     ga_search.parameter_limits = [(0,100),(0,100),(0,100)]
-    def evaluator(pop):
-      n = len(pop);
-      evaluation = [0.0]*n;
-      experiment.begin();
-      logs = experiment.sim_log;
-      log_count = 0
-      for log in logs:
-        steps = log.getStepLog();
-        agent_counter = 0
-        for step in steps:
-          p1_log = step.getAgent("Prey");
-          p2_log = step.getAgent("Predator");
-          agent_counter += p1_log.getCount() + p2_log.getCount();
-        evaluation[log_count] = agent_counter;
-        log_count += 1;
-      ga_search.eval_func = evaluator;
-      return evaluation
+
+    ga_search.eval_func = evaluator;
+    ga_search.GA();
     simulation = None;
   else:
     simulation = pyflamegpu.CUDASimulation(model);
