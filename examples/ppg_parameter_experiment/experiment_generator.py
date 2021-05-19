@@ -27,6 +27,8 @@ class Experiment(object):
 	generator = None;
 	log = None;
 	sim_log = None;
+	simulation = None;
+	verbose = False;
 
 	def __init__(self, *args, **kwargs):
 		if len(kwargs)==0:
@@ -96,47 +98,54 @@ class Experiment(object):
 
 	def begin(self):
 		r"""Begin the experiment with current experiment values"""
-		print("Beginning experiment");
+		if (self.verbose):
+			print("Beginning experiment");
 		if (self.runs>1):
-			print("Preparing experiment ensemble run plan vector");
-			simulation = pyflamegpu.CUDAEnsemble(self.model);
+			if (self.verbose):
+				print("Preparing experiment ensemble run plan vector");
+			self.simulation = pyflamegpu.CUDAEnsemble(self.model);
 			run_plan_vector = pyflamegpu.RunPlanVec(self.model, self.runs);
 			run_plan_vector.setSteps(self.steps);
 			simulation_seed = random.randint(0,99999);
 			run_plan_vector.setRandomSimulationSeed(simulation_seed,1000);
 		else:
-			print("Performing single simulation experiment, with steps", self.steps);
-			simulation = pyflamegpu.CUDASimulation(self.model);
-			simulation.SimulationConfig().steps = self.steps
+			if (self.verbose):
+				print("Performing single simulation experiment, with steps", self.steps);
+			self.simulation = pyflamegpu.CUDASimulation(self.model);
+			self.simulation.SimulationConfig().steps = self.steps
 		if not self.log==None:
 			step_log = pyflamegpu.StepLoggingConfig(self.log);
 			step_log.setFrequency(1);
-			simulation.setStepLog(step_log)
-			simulation.setExitLog(self.log)
+			self.simulation.setStepLog(step_log)
+			self.simulation.setExitLog(self.log)
 		
 		if (self.runs>1):
-			print("Beginning experiment ensemble");
-			simulation.simulate(run_plan_vector);
+			if (self.verbose):
+				print("Beginning experiment ensemble");
+			self.simulation.simulate(run_plan_vector);
 			if not self.log==None:
-				print("ensemble logging")
+				if (self.verbose):
+					print("ensemble logging")
 				self.sim_log = copy.deepcopy(simulation.getLogs());
 				for log in self.sim_log:
 					steps = log.getStepLog();
-					for step in steps:
-						print()
-						print("prey",step.getAgent("Prey").getCount());
-						print("predator",step.getAgent("Predator").getCount());
-						print(type(self.sim_log))
+					if (self.verbose):
+						for step in steps:
+							print()
+							print("prey",step.getAgent("Prey").getCount());
+							print("predator",step.getAgent("Predator").getCount());
+							print(type(self.sim_log))
 		else:
-			simulation.simulate();
+			self.simulation.simulate();
 			if not self.log==None:
-				#self.sim_log = copy.deepcopy(simulation.getRunLog());
-				self.sim_log = simulation.getRunLog();
-				print(type(self.sim_log))			
-				print(type(self.sim_log.getExitLog()))
-				print(self.sim_log.getExitLog().getEnvironmentPropertyArrayFloat("fitnesses"))
-				self.sim_log = simulation.getRunLog().getExitLog().getEnvironmentPropertyArrayFloat("fitnesses")
-		print("Completed experiment:", self.name);
+				self.sim_log = self.simulation.getRunLog();
+				if (self.verbose):
+					print(type(self.sim_log))			
+					print(type(self.sim_log.getExitLog()))
+					print(self.sim_log.getExitLog().getEnvironmentPropertyArrayFloat("fitnesses"))
+					#self.sim_log = simulation.getRunLog().getExitLog().getEnvironmentPropertyArrayFloat("fitnesses")
+		if (self.verbose):
+			print("Completed experiment:", self.name);
 		return self.sim_log
 
 class InitialStateGenerator(object):
@@ -484,7 +493,7 @@ class Search(object):
 	max_time=100;
 	optimal_fitness=1.0;
 	#GA generational process values
-	current_pop_size=0;
+	ga_individual_id=int(0);
 	mutation_rate=0.2;
 	random_initialisation_chance=0.05;
 	#GA fitness calculation
@@ -497,6 +506,7 @@ class Search(object):
 	cwd=os.getcwd()+"/";
 	logged_stats=["mean", "std", "min", "max"];
 	evaluator_experiment = None;
+	verbose = False;
 
 	def __init__(*args, **kwargs):
 		kwargs_items = kwargs.items();
@@ -514,15 +524,14 @@ class Search(object):
 		:type container: 'deap.creator.Individual'
 		:param container: A function assigning the created individual as an individual in a DEAP genetic algorithm population
 		"""
-		print("container type:",type(container()));
 		new = [0]*(len(self.parameter_limits)+1)
 		for i in range(len(self.parameter_limits)):
 			if type(self.parameter_limits[i][0])==type(int()):
-				new[i] = int(random.uniform(self.parameter_limits[i][0], self.parameter_limits[i][1]))
+				new[i] = int(random.randint(self.parameter_limits[i][0], self.parameter_limits[i][1]))
 			else:
 				new[i] = round(random.uniform(self.parameter_limits[i][0], self.parameter_limits[i][1]),6)
-		new[-1] = self.current_pop_size
-		self.current_pop_size += 1
+		new[-1] = int(self.ga_individual_id)
+		self.ga_individual_id += 1
 		new = np.array(new, dtype=np.float64).reshape(1,-1)
 		return container(new)
 
@@ -563,24 +572,13 @@ class Search(object):
 		evaluation = [0.0]*n
 		if not self.evaluator_experiment==None:
 			for i in range(n):
-				param_count = 0;
-				#for param in population[i]:
-				print(population[i])
 				self.evaluator_experiment.generator.setGlobalInt("PREY_POPULATION_TO_GENERATE", population[i][0][0])
 				self.evaluator_experiment.generator.setGlobalInt("PREDATOR_POPULATION_TO_GENERATE", population[i][0][1])
 				self.evaluator_experiment.generator.setGlobalInt("GRASS_POPULATION_TO_GENERATE", population[i][0][2])
 				log = self.evaluator_experiment.begin()
-				print(type(log))
-				
-				#final_log = log.getExitLog()
-				#print(type(final_log))
-				#print("final grass",final_log.getAgent("Grass").getCount())
-				#for step in steps:
-					#print("hello")
-					#print(type(step))
-					#fitness_log = step.getEnvironmentPropertyArrayFloat("fitnesses")
-				#print("fitlog",fitness_log)
-				evaluation[i] = log[0]+(log[1]*100)-(log[2]*1000)
+				final_log = log.getExitLog()
+				fitness_log = final_log.getEnvironmentPropertyArrayFloat("fitnesses")
+				evaluation[i] = fitness_log[0]+(fitness_log[1]*100)-(float(fitness_log[2])/1000)
 		return evaluation
 
 	def __mate(self, parent1, parent2):
@@ -645,44 +643,50 @@ class Search(object):
 		#Initialise a population of mu individuals
 		population = toolbox.population(n=self.mu)
 		start_time = datetime.datetime.now()
-		print("Initial population evalauation (Generation 0)")
+		if (self.verbose):
+			print("Initial population evalauation (Generation 0)")
 		#Evaluate initial population
 		initial_fitnesses = self.__evaluate_population(population);
-		print("initial_fitnesses",initial_fitnesses)
+		if (self.verbose):
+			print("initial_fitnesses",initial_fitnesses)
 		candidates_evaluated = self.mu
 		#Record results per GA in file named the same the current seed being used for the random module
 		unique_run_seed = random.randrange(sys.maxsize)
 		seed_record = working_directory+str(unique_run_seed)+".csv"
-		if not os.path.exists(seed_record):
+		if os.path.exists(seed_record):
+			seed_record = working_directory+str(unique_run_seed)+"(1).csv"
 			population_record = open(seed_record,"w")
 		else:
-			population_record = open(working_directory+str(unique_run_seed)+"(1).csv","w")
-		population_record.write("generation,0,mu,"+str(self.mu)+",lambda,"+str(self.lamda)+"\n")
-		#Set popualtion fitness to evaluated fitness
+			population_record = open(seed_record,"a")
+		population_record.write("SimulationGA,generation,0,mu,"+str(self.mu)+",lambda,"+str(self.lamda)+"\n")
+		#Set population fitness to evaluated fitness
 		for i in range(len(initial_fitnesses)):
-			print(population[i],population[i].fitness,population[i].fitness.values)
-			print(initial_fitnesses)
 			population[i].fitness.values = (initial_fitnesses[i],)
-			population_record.write("\tParameters,")
-			for j in population[i][0].tolist():
-				population_record.write(str(j)+",")
-			population_record.write("Fitness,"+str(population[i].fitness.values)+"\n")
+			population_record.write("\tChromosome_ID,")
+			population_record.write(str(int(population[i][0][-1]))+",")
+			population_record.write("Parameters,")
+			for j in range(len(population[i][0].tolist())-1):
+				population_record.write(str(int(population[i][0][j]))+",")
+			population_record.write("Fitness,"+str(population[i].fitness.values[0])+"\n")
 		population_record.close()
 		#Record initial population in the logbook
 		self.__log(logbook, population, current_generation, self.mu)
-		print("begin GA");
+		if (self.verbose):
+			print("begin GA");
 		#Begin generational GA process
 		end_conditions = False
 		optimal_solutions = []
 		optimal_count = 0
-		while(current_generation<self.max_generations and (not end_conditions)):
+		while(not end_conditions):
 			current_generation += 1
-			#print("new GA generation",current_generation);
-			print("\t GA Generation:",current_generation)
+			if (self.verbose):
+				print("GA Generation:",current_generation)
 			generational_evaluations = 0
-			self.current_pop_size = 0
 			offspring = []
 			evaluations = []
+			population_record = open(seed_record, "a")
+			population_record.write("SimulationGA,generation,"+str(current_generation)+"\n")
+			population_record.close()
 			#Generate offspring candidates. If crossover is being used, it is done before mutation
 			for i in range(self.lamda):
 				mate_chance = random.uniform(0,1)
@@ -709,28 +713,25 @@ class Search(object):
 			#log_fitness = open(working_directory+"current_ga_fitness_log.csv","w")
 			#log_fitness.write(str(logbook)+"\n")
 			#log_fitness.close()
-			if not os.path.exists(seed_record):
-				population_record = open(seed_record,"w")
-			else:
-				population_record = open(working_directory+str(unique_run_seed)+"(1).csv","w")
+			population_record = open(seed_record, "a")
 			check_nonunique = []
 			for p in population:
-				population_record.write("\t")
-				for q in p[0].tolist():
-					population_record.write(str(q)+",")
-				population_record.write("fitness,"+str(p.fitness.values)+"\n")
+				population_record.write("\tChromosome_ID,")
+				population_record.write(str(int(p[0].tolist()[-1]))+",")
+				population_record.write("Parameters,")
+				for j in range(len(p[0].tolist())-1):
+					population_record.write(str(int(p[0][j]))+",")
+				population_record.write("Fitness,"+str(p.fitness.values[0])+"\n")
 				if p.fitness.values[0]>self.optimal_fitness:
 					for opt in optimal_solutions:
 						check_nonunique.append(all(elem in p[0][:-1] for elem in opt[0][:-1]))
 					if not any(check_nonunique):
 						optimal_solutions.append((p,current_generation))
-			population_record.write("SimulationGA,generation,"+str(current_generation)+"\n")
 			population_record.close()
 			end_time = datetime.datetime.now()
 			time_taken = (end_time-start_time).total_seconds();
 			minutes_taken = (int)(time_taken/60.0);
-			print("time (secs,mins):",time_taken, minutes_taken);
-			if time_taken>=self.max_time:
+			if time_taken>=self.max_time or current_generation>=self.max_generations:
 				end_conditions=True;
 			opti = optimal_solutions[optimal_count:]
 			if len(opti)>0:
