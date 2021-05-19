@@ -880,6 +880,15 @@ env.newPropertyUInt("GAIN_FROM_FOOD_PREDATOR", 75);
 env.newPropertyUInt("GAIN_FROM_FOOD_PREY", 50);
 env.newPropertyUInt("GRASS_REGROW_CYCLES", 100);
 
+#Fitness tracking variables
+env.newPropertyArrayFloat("fitnesses", 3, [0.0,0.0,0.0]);
+env.newPropertyUInt("iteration", 0);
+env.newPropertyUInt("current_largest_pop", 0);
+env.newPropertyUInt("population_difference", 0);
+env.newPropertyUInt("death_check", 0);
+env.newPropertyUInt("death_iteration", 0);
+env.newPropertyUInt("oscillations", 0);
+
 """
   Location messages
 """
@@ -1070,6 +1079,43 @@ class initGrassPopulation(pyflamegpu.HostFunctionCallback):
     FLAMEGPU.environment.setPropertyUInt("CURRENT_ID", current_id+i)
     return
 
+# Add init function for setting up fitness tracking and calculation
+class init_fitness_calculator(pyflamegpu.HostFunctionCallback):
+  def run(self,FLAMEGPU):
+    prey = FLAMEGPU.agent("Prey").count();
+    predators = FLAMEGPU.agent("Predator").count();
+    grass = FLAMEGPU.agent("Grass").count();
+    if (predators>prey):
+      FLAMEGPU.environment.setPropertyUInt("current_largest_pop", 1);
+    else:
+      FLAMEGPU.environment.setPropertyUInt("current_largest_pop", 0);
+    return
+# Add step function for fitness tracking as used in the FLAMEGPU1 model
+class step_fitness_calculator(pyflamegpu.HostFunctionCallback):
+  def run(self,FLAMEGPU):
+    FLAMEGPU.environment.setPropertyUInt("iteration", FLAMEGPU.environment.getPropertyUInt("iteration")+1);
+    prey = FLAMEGPU.agent("Prey").count();
+    predators = FLAMEGPU.agent("Predator").count();
+    FLAMEGPU.environment.setPropertyUInt("population_difference", FLAMEGPU.environment.getPropertyUInt("population_difference")+abs(predators-prey));
+    if (FLAMEGPU.environment.getPropertyUInt("current_largest_pop")==1 and (prey>predators)):
+      FLAMEGPU.environment.setPropertyUInt("oscillations", FLAMEGPU.environment.getPropertyUInt("oscillations")+1);
+      FLAMEGPU.environment.setPropertyUInt("current_largest_pop", 0);
+    else:
+      if (FLAMEGPU.environment.getPropertyUInt("current_largest_pop")==0 and (predators>prey)):
+        FLAMEGPU.environment.setPropertyUInt("oscillations", FLAMEGPU.environment.getPropertyUInt("oscillations")+1);
+        FLAMEGPU.environment.setPropertyUInt("current_largest_pop", 1);
+    if (FLAMEGPU.environment.getPropertyUInt("death_check")==0):
+      if (prey==0 or predators==0):
+        FLAMEGPU.environment.setPropertyUInt("death_iteration", FLAMEGPU.environment.getPropertyUInt("iteration"));
+        FLAMEGPU.environment.setPropertyUInt("death_check", 1);
+    return
+
+# Add exit function for final fitness calculation as used in the FLAMEGPU1 model
+class exit_fitness_calculator(pyflamegpu.HostFunctionCallback):
+  def run(self,FLAMEGPU):
+    FLAMEGPU.environment.setPropertyArrayFloat("fitnesses", [float(FLAMEGPU.environment.getPropertyUInt("death_iteration")), float(FLAMEGPU.environment.getPropertyUInt("oscillations")), float(FLAMEGPU.environment.getPropertyUInt("population_difference"))/FLAMEGPU.environment.getPropertyUInt("iteration")]);
+    return
+
 # Add function callback to INIT functions for population generation
 initialPreyPopulation = initPreyPopulation();
 model.addInitFunctionCallback(initialPreyPopulation);
@@ -1077,6 +1123,13 @@ initialPredatorPopulation = initPredatorPopulation();
 model.addInitFunctionCallback(initialPredatorPopulation);
 initialGrassPopulation = initGrassPopulation();
 model.addInitFunctionCallback(initialGrassPopulation);
+
+initfit = init_fitness_calculator()
+model.addInitFunctionCallback(initfit);
+stepfit = step_fitness_calculator()
+model.addStepFunctionCallback(stepfit);
+exitfit = exit_fitness_calculator()
+model.addExitFunctionCallback(exitfit);
 
 """
   Control flow
@@ -1137,11 +1190,16 @@ grass_agent_log.logStandardDevInt("dead_cycles");
 # uagrass_agent_log.logCount();
 # uagrass_agent_log.logMeanInt("dead_cycles");
 # uagrass_agent_log.logStandardDevInt("dead_cycles");
+
+
+logging_config.logEnvironment("fitnesses");
+
+
 step_log = pyflamegpu.StepLoggingConfig(logging_config);
 step_log.setFrequency(1);
 
 
-def evaluator(pop):
+def evaluator(pop,experiment):
   n = len(pop);
   evaluation = [0.0]*n;
   experiment.begin();
@@ -1164,6 +1222,10 @@ def evaluator(pop):
   print("evaluation",evaluation)
   return evaluation
 
+#def evaluator2(pop,experiment):
+  #evaluation = 0
+  #return evaluation
+
 
 """
   Create Model Runner
@@ -1179,6 +1241,8 @@ if ENSEMBLE:
   simulation = pyflamegpu.CUDAEnsemble(model);
 else:
   if PARAMETER_EXPERIMENT:
+    MU = 3
+    LAM = 1
     experiment_initial_state_generator = exp.InitialStateGenerator();
 
     experiment_initial_state_generator.setGlobalFloat("PREY_REPRODUCTION_CHANCE",(0.01,0.1));
@@ -1239,12 +1303,14 @@ else:
     experiment.setModel(model);
     experiment.initialStateGenerator(experiment_initial_state_generator);
     experiment.setSimulationSteps(10);
-    experiment.setRuns(2);
+    experiment.setRuns(1);
     experiment.setLog(step_log);
     ga_search = exp.Search();
     ga_search.parameter_limits = [(0,100),(0,100),(0,100)]
-
-    ga_search.eval_func = evaluator;
+    ga_search.mu = MU;
+    ga_search.lamda = LAM;
+    #ga_search.eval_func = evaluator;
+    ga_search.setPopEvaluationExperiment(experiment);
     ga_search.GA();
     simulation = None;
   else:
@@ -1252,8 +1318,8 @@ else:
     if not VISUALISATION:
       simulation.SimulationConfig().steps = STEPS;
 
-simulation.setStepLog(step_log);
-simulation.setExitLog(logging_config)
+    simulation.setStepLog(step_log);
+    simulation.setExitLog(logging_config)
 
 """
   Create Visualisation
@@ -1291,6 +1357,7 @@ if pyflamegpu.VISUALISATION and VISUALISATION and not ENSEMBLE and not PARAMETER
 if ENSEMBLE:
     simulation.simulate(run_plan_vector);
 else:
+  if not PARAMETER_EXPERIMENT:
     simulation.simulate();
 
 """
@@ -1308,6 +1375,7 @@ if pyflamegpu.VISUALISATION and VISUALISATION and not ENSEMBLE:
 if ENSEMBLE:
     logs = simulation.getLogs();
 else:
+  if not PARAMETER_EXPERIMENT:
     logs = simulation.getRunLog();
 
 
@@ -1464,6 +1532,7 @@ if ENSEMBLE:
     # plt.savefig(fname,format='png');
     # plt.close(fig);
 else:
+  if not PARAMETER_EXPERIMENT:
     steps = logs.getStepLog();
     prey_agent_counts = [None]*len(steps)
     predator_agent_counts = [None]*len(steps)

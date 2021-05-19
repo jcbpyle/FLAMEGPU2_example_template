@@ -129,6 +129,7 @@ class Experiment(object):
 				self.sim_log = simulation.getRunLog();
 		
 		print("Completed experiment:", self.name);
+		return self.sim_log
 
 class InitialStateGenerator(object):
 	r"""This class allows users to define the construction of a valid inital state for a FLAME-GPU2 model including global variables and agent populations
@@ -487,12 +488,18 @@ class Search(object):
 	output_file="search_results.csv";
 	cwd=os.getcwd()+"/";
 	logged_stats=["mean", "std", "min", "max"];
-	eval_func = None;
+	evaluator_experiment = None;
 
 	def __init__(*args, **kwargs):
 		kwargs_items = kwargs.items();
 		if "mu" in kwargs_items:
 			mu = kwargs_items["mu"];
+
+	def setPopEvaluationExperiment(self, evaluator):
+		r"""Allows user to specifically set a FLAME-GPU2 ensemble experiment to be used in evaluating the fitness of a population of GA individuals
+		:type evaluator: py:class:`experiment_generator.Experiment`
+		:param evaluator: FLAME-GPU2 ensemble experiment"""
+		self.evaluator_experiment = evaluator;
 
 	def __create_individual(self, container):
 		r"""Creates a new GA individual (chromosome) with values randomly generated based on the provided limits for each parameter
@@ -546,6 +553,14 @@ class Search(object):
 		"""
 		n = len(population)
 		evaluation = [0.0]*n
+		if not self.evaluator_experiment==None:
+			for i in range(len(population)):
+				param_count = 0;
+				#for param in parameter_limits:
+				self.evaluator_experiment.begin()
+				sim_results = self.evaluator_experiment.sim_log
+
+				#evaluation[i] = 
 		return evaluation
 
 	def __mate(self, parent1, parent2):
@@ -612,7 +627,7 @@ class Search(object):
 		start_time = datetime.datetime.now()
 		print("Initial population evalauation (Generation 0)")
 		#Evaluate initial population
-		initial_fitnesses = self.__evaluate_population(population) if self.eval_func==None else self.eval_func(population);
+		initial_fitnesses = self.__evaluate_population(population);
 		print("initial_fitnesses",initial_fitnesses)
 		candidates_evaluated = self.mu
 		#Record results per GA in file named the same the current seed being used for the random module
@@ -642,8 +657,8 @@ class Search(object):
 		optimal_count = 0
 		while(current_generation<self.max_generations and (not end_conditions)):
 			current_generation += 1
-			print("new GA generation",current_generation);
-			print("\t Generation:",current_generation)
+			#print("new GA generation",current_generation);
+			print("\t GA Generation:",current_generation)
 			generational_evaluations = 0
 			self.current_pop_size = 0
 			offspring = []
@@ -661,12 +676,12 @@ class Search(object):
 			for off in offspring:
 				off, = toolbox.mutate(off)
 			generational_evaluations += len(offspring)
-			evaluations = self.__evaluate_population(offspring) if self.eval_func==None else self.eval_func(offspring);
+			evaluations = self.__evaluate_population(offspring);
 			for i in range(len(evaluations)):
 				offspring[i].fitness.values = (evaluations[i],)
 			candidates_evaluated += generational_evaluations
 			#Select the next generation, favouring the offspring in the event of equal fitness values
-			population, new_individuals = self.favour_offspring(population, offspring, self.mu)
+			population, new_individuals = self.__favour_offspring(population, offspring, self.mu)
 			#Print a report about the current generation
 			if generational_evaluations>0:
 				self.__log(logbook, population, current_generation, generational_evaluations)
@@ -694,7 +709,7 @@ class Search(object):
 			end_time = datetime.datetime.now()
 			time_taken = (end_time-start_time).total_seconds();
 			minutes_taken = (int)(time_taken/60.0);
-			print(time_taken, minutes_taken);
+			print("time (secs,mins):",time_taken, minutes_taken);
 			if time_taken>=self.max_time:
 				end_conditions=True;
 			opti = optimal_solutions[optimal_count:]
