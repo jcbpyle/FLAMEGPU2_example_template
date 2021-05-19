@@ -1304,7 +1304,7 @@ else:
     experiment.initialStateGenerator(experiment_initial_state_generator);
     experiment.setSimulationSteps(10);
     experiment.setRuns(1);
-    experiment.setLog(step_log);
+    experiment.setLog(logging_config);
     ga_search = exp.Search();
     ga_search.parameter_limits = [(0,100),(0,100),(0,100)]
     ga_search.mu = MU;

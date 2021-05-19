@@ -7,6 +7,7 @@ import threading
 import queue
 import datetime
 import numpy as np
+import copy
 from deap import base
 from deap import creator
 from deap import tools
@@ -104,18 +105,21 @@ class Experiment(object):
 			simulation_seed = random.randint(0,99999);
 			run_plan_vector.setRandomSimulationSeed(simulation_seed,1000);
 		else:
-			print("Performing single simulation experiment");
+			print("Performing single simulation experiment, with steps", self.steps);
 			simulation = pyflamegpu.CUDASimulation(self.model);
 			simulation.SimulationConfig().steps = self.steps
 		if not self.log==None:
-			simulation.setStepLog(self.log)
+			step_log = pyflamegpu.StepLoggingConfig(self.log);
+			step_log.setFrequency(1);
+			simulation.setStepLog(step_log)
+			simulation.setExitLog(self.log)
 		
 		if (self.runs>1):
 			print("Beginning experiment ensemble");
 			simulation.simulate(run_plan_vector);
 			if not self.log==None:
 				print("ensemble logging")
-				self.sim_log = simulation.getLogs();
+				self.sim_log = copy.deepcopy(simulation.getLogs());
 				for log in self.sim_log:
 					steps = log.getStepLog();
 					for step in steps:
@@ -126,8 +130,12 @@ class Experiment(object):
 		else:
 			simulation.simulate();
 			if not self.log==None:
+				#self.sim_log = copy.deepcopy(simulation.getRunLog());
 				self.sim_log = simulation.getRunLog();
-		
+				print(type(self.sim_log))			
+				print(type(self.sim_log.getExitLog()))
+				print(self.sim_log.getExitLog().getEnvironmentPropertyArrayFloat("fitnesses"))
+				self.sim_log = simulation.getRunLog().getExitLog().getEnvironmentPropertyArrayFloat("fitnesses")
 		print("Completed experiment:", self.name);
 		return self.sim_log
 
@@ -554,13 +562,25 @@ class Search(object):
 		n = len(population)
 		evaluation = [0.0]*n
 		if not self.evaluator_experiment==None:
-			for i in range(len(population)):
+			for i in range(n):
 				param_count = 0;
-				#for param in parameter_limits:
-				self.evaluator_experiment.begin()
-				sim_results = self.evaluator_experiment.sim_log
-
-				#evaluation[i] = 
+				#for param in population[i]:
+				print(population[i])
+				self.evaluator_experiment.generator.setGlobalInt("PREY_POPULATION_TO_GENERATE", population[i][0][0])
+				self.evaluator_experiment.generator.setGlobalInt("PREDATOR_POPULATION_TO_GENERATE", population[i][0][1])
+				self.evaluator_experiment.generator.setGlobalInt("GRASS_POPULATION_TO_GENERATE", population[i][0][2])
+				log = self.evaluator_experiment.begin()
+				print(type(log))
+				
+				#final_log = log.getExitLog()
+				#print(type(final_log))
+				#print("final grass",final_log.getAgent("Grass").getCount())
+				#for step in steps:
+					#print("hello")
+					#print(type(step))
+					#fitness_log = step.getEnvironmentPropertyArrayFloat("fitnesses")
+				#print("fitlog",fitness_log)
+				evaluation[i] = log[0]+(log[1]*100)-(log[2]*1000)
 		return evaluation
 
 	def __mate(self, parent1, parent2):
