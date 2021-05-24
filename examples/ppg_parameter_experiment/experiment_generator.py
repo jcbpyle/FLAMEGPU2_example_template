@@ -33,6 +33,8 @@ class Experiment(object):
 	def __init__(self, *args, **kwargs):
 		if len(kwargs)==0:
 			args_items = len(args);
+			if args_items>4:
+				print("Please use keywords such as 'model=...' for more detailed initialisation.");
 			if args_items>3:
 				self.repeats = args[3];
 			if args_items>2:
@@ -49,6 +51,8 @@ class Experiment(object):
 			self.model = kwargs['model'] if ('model' in kwargs) else self.model;
 			self.repeats = kwargs['repeats'] if ('repeats' in kwargs) else self.repeats;
 			self.runs = kwargs['runs'] if ('runs' in kwargs) else self.runs;
+			self.generator = kwargs['generator'] if ('generator' in kwargs) else self.generator;
+			self.verbose = kwargs['verbose'] if ('verbose' in kwargs) else self.verbose;
 
 	def setModelLogDirectory(self, loc):
 		r"""Allows user to specifically set the expected directory for model logs
@@ -106,8 +110,9 @@ class Experiment(object):
 			self.simulation = pyflamegpu.CUDAEnsemble(self.model);
 			run_plan_vector = pyflamegpu.RunPlanVec(self.model, self.runs);
 			run_plan_vector.setSteps(self.steps);
-			simulation_seed = random.randint(0,99999);
-			run_plan_vector.setRandomSimulationSeed(simulation_seed,1000);
+			simulation_seed = random.randint(0,sys.maxsize);
+			seed_step = random.randint(1,sys.maxsize/self.runs);
+			run_plan_vector.setRandomSimulationSeed(simulation_seed,seed_step);
 		else:
 			if (self.verbose):
 				print("Performing single simulation experiment, with steps", self.steps);
@@ -126,7 +131,7 @@ class Experiment(object):
 			if not self.log==None:
 				if (self.verbose):
 					print("ensemble logging")
-				self.sim_log = copy.deepcopy(simulation.getLogs());
+				self.sim_log = self.simulation.getLogs();
 				for log in self.sim_log:
 					steps = log.getStepLog();
 					if (self.verbose):
@@ -146,7 +151,6 @@ class Experiment(object):
 					#self.sim_log = simulation.getRunLog().getExitLog().getEnvironmentPropertyArrayFloat("fitnesses")
 		if (self.verbose):
 			print("Completed experiment:", self.name);
-		return self.sim_log
 
 class InitialStateGenerator(object):
 	r"""This class allows users to define the construction of a valid inital state for a FLAME-GPU2 model including global variables and agent populations
