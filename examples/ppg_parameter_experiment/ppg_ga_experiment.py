@@ -1085,10 +1085,13 @@ class init_fitness_calculator(pyflamegpu.HostFunctionCallback):
     prey = FLAMEGPU.agent("Prey").count();
     predators = FLAMEGPU.agent("Predator").count();
     grass = FLAMEGPU.agent("Grass").count();
+    #print("init fitness")
+    #print("\t",prey, predators, grass)
     if (predators>prey):
       FLAMEGPU.environment.setPropertyUInt("current_largest_pop", 1);
     else:
       FLAMEGPU.environment.setPropertyUInt("current_largest_pop", 0);
+    #print("\t",FLAMEGPU.environment.getPropertyUInt("current_largest_pop"))
     return
 # Add step function for fitness tracking as used in the FLAMEGPU1 model
 class step_fitness_calculator(pyflamegpu.HostFunctionCallback):
@@ -1105,9 +1108,12 @@ class step_fitness_calculator(pyflamegpu.HostFunctionCallback):
         FLAMEGPU.environment.setPropertyUInt("oscillations", FLAMEGPU.environment.getPropertyUInt("oscillations")+1);
         FLAMEGPU.environment.setPropertyUInt("current_largest_pop", 1);
     if (FLAMEGPU.environment.getPropertyUInt("death_check")==0):
+      #FLAMEGPU.environment.setPropertyUInt("death_iteration", FLAMEGPU.environment.getPropertyUInt("iteration"));
       if (prey==0 or predators==0):
         FLAMEGPU.environment.setPropertyUInt("death_iteration", FLAMEGPU.environment.getPropertyUInt("iteration"));
         FLAMEGPU.environment.setPropertyUInt("death_check", 1);
+    #print("step fitness")
+    #print("\t", prey, predators, FLAMEGPU.environment.getPropertyUInt("current_largest_pop"), FLAMEGPU.environment.getPropertyUInt("population_difference"), FLAMEGPU.environment.getPropertyUInt("oscillations"), FLAMEGPU.environment.getPropertyUInt("death_check"), FLAMEGPU.environment.getPropertyUInt("death_iteration"))
     return
 
 # Add exit function for final fitness calculation as used in the FLAMEGPU1 model
@@ -1124,8 +1130,8 @@ model.addInitFunctionCallback(initialPredatorPopulation);
 initialGrassPopulation = initGrassPopulation();
 model.addInitFunctionCallback(initialGrassPopulation);
 
-initfit = init_fitness_calculator()
-model.addInitFunctionCallback(initfit);
+#initfit = init_fitness_calculator()
+#model.addInitFunctionCallback(initfit);
 stepfit = step_fitness_calculator()
 model.addStepFunctionCallback(stepfit);
 exitfit = exit_fitness_calculator()
@@ -1241,8 +1247,8 @@ if ENSEMBLE:
   simulation = pyflamegpu.CUDAEnsemble(model);
 else:
   if PARAMETER_EXPERIMENT:
-    MU = 3
-    LAM = 1
+    MU = 100
+    LAM = 25
     experiment_initial_state_generator = exp.InitialStateGenerator();
 
     experiment_initial_state_generator.setGlobalFloat("PREY_REPRODUCTION_CHANCE",(0.01,0.1));
@@ -1302,19 +1308,22 @@ else:
     experiment = exp.Experiment("ppg_test_experiment");
     experiment.setModel(model);
     experiment.initialStateGenerator(experiment_initial_state_generator);
-    experiment.setSimulationSteps(10);
+    experiment.setSimulationSteps(1000);
     experiment.setRuns(1);
     experiment.setLog(logging_config);
-    experiment.verbose = True;
+    #experiment.verbose = True;
     ga_search = exp.Search();
-    ga_search.parameter_limits = [(0,100),(0,100),(0,100)]
+    #ga_search.parameter_limits = [(0,100),(0,100),(0,100)]
+    ga_search.parameter_limits = {"PREY_POPULATION_TO_GENERATE":(1,100),"PREDATOR_POPULATION_TO_GENERATE":(1,100),"GRASS_POPULATION_TO_GENERATE":(1,100),"PREY_REPRODUCTION_CHANCE":(0.05,0.1),"PREDATOR_REPRODUCTION_CHANCE":(0.05,0.1),"GAIN_FROM_FOOD_PREY":(1,100),"GAIN_FROM_FOOD_PREDATOR":(1,100),"GRASS_REGROW_CYCLES":(1,100)}
     ga_search.mu = MU;
     ga_search.lamda = LAM;
-    ga_seach.verbose = True;
+    ga_search.max_time = 10000
+    ga_search.max_generations = 196
+    ga_search.verbose = True;
     #ga_search.eval_func = evaluator;
     ga_search.setPopEvaluationExperiment(experiment);
     ga_search.GA();
-    simulation = None;
+    del ga_search
   else:
     simulation = pyflamegpu.CUDASimulation(model);
     if not VISUALISATION:

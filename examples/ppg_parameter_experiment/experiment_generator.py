@@ -145,9 +145,7 @@ class Experiment(object):
 			if not self.log==None:
 				self.sim_log = self.simulation.getRunLog();
 				if (self.verbose):
-					print(type(self.sim_log))			
-					print(type(self.sim_log.getExitLog()))
-					print(self.sim_log.getExitLog().getEnvironmentPropertyArrayFloat("fitnesses"))
+					print("experiment end fitnesses",self.sim_log.getExitLog().getEnvironmentPropertyArrayFloat("fitnesses"))
 					#self.sim_log = simulation.getRunLog().getExitLog().getEnvironmentPropertyArrayFloat("fitnesses")
 		if (self.verbose):
 			print("Completed experiment:", self.name);
@@ -159,7 +157,7 @@ class InitialStateGenerator(object):
 	#Register default internal values
 	file = None;
 	global_list = {};
-	agent_list = {};
+	agent_list = [];
 
 	def __init__(self, *args, **kwargs):
 		if len(kwargs)==0:
@@ -175,19 +173,10 @@ class InitialStateGenerator(object):
 		self.file = file if type(file)==type('') else None;
 
 	def __setVariable(self, global_name, global_range, distribution=random.uniform):
-		variable_names = self.global_list.keys()
-		if global_name in variable_names:
-			variable_update = True;
+		if type(global_range)==type(tuple()):
+			self.global_list[global_name] = distribution(global_range[0], global_range[1]);
 		else:
-			variable_update = False;
-		if type(global_range)==type(tuple()) and variable_update:
-			self.global_list[variable] = distribution(global_range[0], global_range[1]);
-		else:
-			if type(global_range)==type(tuple()):
-				variable = {global_name:distribution(global_range[0], global_range[1])};
-			else:
-				variable = {global_name:global_range};
-			self.global_list.append(variable);
+			self.global_list[global_name] = global_range;
 			
 		
 	def setGlobalFloat(self, global_name, global_range, distribution=random.uniform):
@@ -300,7 +289,7 @@ class AgentPopulation(object):
 	pop_min = 1;
 	pop_max = 1024;
 	pop_list = []
-	variable_list = [];
+	variable_list = {};
 
 	def __init__(self, *args, **kwargs):
 		if len(kwargs.items())==0:
@@ -365,20 +354,24 @@ class AgentPopulation(object):
 		self.pop_max = pop;
 
 	def __setVariable(self, variable_name, variable_range, distribution=random.uniform):
-		variable_names = [var[0] for var in self.variable_list];
-		if variable_name in variable_names:
-			variable_update = True;
-			variable_index = variable_names.index(variable_name);
+		# variable_names = [var[0] for var in self.variable_list];
+		# if variable_name in variable_names:
+		# 	variable_update = True;
+		# 	variable_index = variable_names.index(variable_name);
+		# else:
+		# 	variable_update = False;
+		# if type(variable_range)==type(tuple()):
+		# 	variable = (variable_name, distribution(variable_range[0], variable_range[1]), True);
+		# else:
+		# 	variable = (variable_name, variable_range, True);
+		# if variable_update:
+		# 	self.variable_list[variable_index] = variable;
+		# else:
+		# 	self.variable_list.append(variable);
+		if type(variable_range)==type(tuple()):# and variable_update:
+			self.variable_list[variable_name] = distribution(variable_range[0], variable_range[1]);
 		else:
-			variable_update = False;
-		if type(variable_range)==type(tuple()):
-			variable = (variable_name, distribution(variable_range[0], variable_range[1]), True);
-		else:
-			variable = (variable_name, variable_range, True);
-		if variable_update:
-			self.variable_list[variable_index] = variable;
-		else:
-			self.variable_list.append(variable);
+			self.variable_list[variable_name] = variable_range;
 
 	def setVariable(self, variable_name, variable_range):
 		if type(variable_range)==type(float()):
@@ -444,13 +437,14 @@ class AgentPopulation(object):
 		:type variable_range: list
 		:param variable_range: Set agent variable value to the provided list of values
 		"""
-		variable = (variable_name, variable_range, True);
-		variable_names = [var[0] for var in self.variable_list];
-		if variable_name in variable_names:
-			variable_index = variable_names.index(variable_name);
-			self.variable_list[variable_index] =variable;
-		else:
-			self.variable_list.append(variable);
+		self.__setVariable(variable_name, variable_range);
+		# variable = (variable_name, variable_range, True);
+		# variable_names = [var[0] for var in self.variable_list];
+		# if variable_name in variable_names:
+		# 	variable_index = variable_names.index(variable_name);
+		# 	self.variable_list[variable_index] =variable;
+		# else:
+		# 	self.variable_list.append(variable);
 
 	def setVariableString(self, variable_name, variable_range):
 		r"""Allows user to provide a string value to assign to an agent variable. This will set the value for *all* agents in the population
@@ -459,13 +453,14 @@ class AgentPopulation(object):
 		:type variable_range: string
 		:param variable_range: Set agent variable value to the provided string
 		"""
-		variable = (variable_name, variable_range, True);
-		variable_names = [var[0] for var in self.variable_list];
-		if variable_name in variable_names:
-			variable_index = variable_names.index(variable_name);
-			self.variable_list[variable_index] =variable;
-		else:
-			self.variable_list.append(variable);
+		self.__setVariable(variable_name, variable_range);
+		# variable = (variable_name, variable_range, True);
+		# variable_names = [var[0] for var in self.variable_list];
+		# if variable_name in variable_names:
+		# 	variable_index = variable_names.index(variable_name);
+		# 	self.variable_list[variable_index] =variable;
+		# else:
+		# 	self.variable_list.append(variable);
 
 	def setVariableRandomPerAgent(self, variable_name, variable_range, distribution='random.uniform'):
 		r"""Allows user to describe the initialisation of a float variable for *each* agent within the population via a tuple of minimum and maximum values from which to randomly generate a value
@@ -476,13 +471,14 @@ class AgentPopulation(object):
 		:type distribution: py:class:`random.uniform`
 		:param distribution: User may specify a function via which to generate the value. Defaults to python's random.uniform
 		"""
-		variable = (variable_name, variable_range, distribution, False);
-		variable_names = [var[0] for var in self.variable_list];
-		if variable_name in variable_names:
-			variable_index = variable_names.index(variable_name);
-			self.variable_list[variable_index] =variable;
-		else:
-			self.variable_list.append(variable);
+		self.__setVariable(variable_name, variable_range);
+		# variable = (variable_name, variable_range, distribution, False);
+		# variable_names = [var[0] for var in self.variable_list];
+		# if variable_name in variable_names:
+		# 	variable_index = variable_names.index(variable_name);
+		# 	self.variable_list[variable_index] =variable;
+		# else:
+		# 	self.variable_list.append(variable);
 
 class Search(object):
 	r"""This class provides an interface to a genetic algorithm(GA) based search experiment intended to be used for a FLAME-GPU2 model"""
@@ -504,7 +500,7 @@ class Search(object):
 	fitness_weights=(1.0,);
 	fitness_function=None;
 	#GA chromosome initialisation and limiter
-	parameter_limits=[(-1.0,1.0)];
+	parameter_limits={};
 	#GA logging
 	output_file="search_results.csv";
 	cwd=os.getcwd()+"/";
@@ -528,15 +524,15 @@ class Search(object):
 		:type container: 'deap.creator.Individual'
 		:param container: A function assigning the created individual as an individual in a DEAP genetic algorithm population
 		"""
-		new = [0]*(len(self.parameter_limits)+1)
-		for i in range(len(self.parameter_limits)):
-			if type(self.parameter_limits[i][0])==type(int()):
-				new[i] = int(random.randint(self.parameter_limits[i][0], self.parameter_limits[i][1]))
+		new = {};
+		for item in self.parameter_limits.items():
+			if type(item[1][0])==type(int()):
+				new[item[0]] = int(random.randint(item[1][0], item[1][1]))
 			else:
-				new[i] = round(random.uniform(self.parameter_limits[i][0], self.parameter_limits[i][1]),6)
-		new[-1] = int(self.ga_individual_id)
+				new[item[0]] = round(random.uniform(item[1][0], item[1][1]),6)
+		new["chromosome_id"] = int(self.ga_individual_id)
 		self.ga_individual_id += 1
-		new = np.array(new, dtype=np.float64).reshape(1,-1)
+		#new = np.array(new, dtype=np.float64).reshape(1,-1)
 		return container(new)
 
 	def __favour_offspring(self, parents, offspring, MU):
@@ -576,13 +572,23 @@ class Search(object):
 		evaluation = [0.0]*n
 		if not self.evaluator_experiment==None:
 			for i in range(n):
-				self.evaluator_experiment.generator.setGlobalInt("PREY_POPULATION_TO_GENERATE", population[i][0][0])
-				self.evaluator_experiment.generator.setGlobalInt("PREDATOR_POPULATION_TO_GENERATE", population[i][0][1])
-				self.evaluator_experiment.generator.setGlobalInt("GRASS_POPULATION_TO_GENERATE", population[i][0][2])
-				log = self.evaluator_experiment.begin()
+				individual = population[i].items();
+				for item in individual:
+					if not item[0]=="chromsome_id":
+						if type(item[1])==type(int()):
+							self.evaluator_experiment.generator.setGlobalInt(item[0],item[1]);
+						else:
+							self.evaluator_experiment.generator.setGlobalFloat(item[0],item[1]);
+				# self.evaluator_experiment.generator.setGlobalInt("PREY_POPULATION_TO_GENERATE", individual[0][1]);
+				# self.evaluator_experiment.generator.setGlobalInt("PREDATOR_POPULATION_TO_GENERATE", individual[1][1]);
+				# self.evaluator_experiment.generator.setGlobalInt("GRASS_POPULATION_TO_GENERATE", individual[2][1]);
+				self.evaluator_experiment.begin();
+				log = self.evaluator_experiment.sim_log;
 				final_log = log.getExitLog()
 				fitness_log = final_log.getEnvironmentPropertyArrayFloat("fitnesses")
-				evaluation[i] = fitness_log[0]+(fitness_log[1]*100)-(float(fitness_log[2])/1000)
+				evaluation[i] = (0.001*fitness_log[0])+(0.01*fitness_log[1])-(0.00001*fitness_log[2])
+				if self.verbose:
+					print("\t individual",population[i]["chromosome_id"],"evaluated")
 		return evaluation
 
 	def __mate(self, parent1, parent2):
@@ -628,7 +634,7 @@ class Search(object):
 			open(working_directory+"optimal_solutions_discovered.csv","w").close()
 		#Create a fitness function +ve for maximisation, -ve for minimisation
 		creator.create("Fitness",base.Fitness,weights=self.fitness_weights)
-		creator.create("Individual",list,fitness=creator.Fitness)
+		creator.create("Individual",dict,fitness=creator.Fitness)
 		toolbox = base.Toolbox()
 		toolbox.register("individual",self.__create_individual,creator.Individual)
 		toolbox.register("population", tools.initRepeat, list, toolbox.individual)
@@ -651,8 +657,8 @@ class Search(object):
 			print("Initial population evalauation (Generation 0)")
 		#Evaluate initial population
 		initial_fitnesses = self.__evaluate_population(population);
-		if (self.verbose):
-			print("initial_fitnesses",initial_fitnesses)
+		#if (self.verbose):
+			#print("initial_fitnesses",initial_fitnesses)
 		candidates_evaluated = self.mu
 		#Record results per GA in file named the same the current seed being used for the random module
 		unique_run_seed = random.randrange(sys.maxsize)
@@ -667,10 +673,12 @@ class Search(object):
 		for i in range(len(initial_fitnesses)):
 			population[i].fitness.values = (initial_fitnesses[i],)
 			population_record.write("\tChromosome_ID,")
-			population_record.write(str(int(population[i][0][-1]))+",")
+			population_record.write(str(int(population[i]["chromosome_id"]))+",")
 			population_record.write("Parameters,")
-			for j in range(len(population[i][0].tolist())-1):
-				population_record.write(str(int(population[i][0][j]))+",")
+			for j in population[i].items():
+				if not j[0]=="chromosome_id":
+					value = str(int(j[1])) if type(j[1])==type(int()) else str(j[1])
+					population_record.write(value+",")
 			population_record.write("Fitness,"+str(population[i].fitness.values[0])+"\n")
 		population_record.close()
 		#Record initial population in the logbook
@@ -721,16 +729,18 @@ class Search(object):
 			check_nonunique = []
 			for p in population:
 				population_record.write("\tChromosome_ID,")
-				population_record.write(str(int(p[0].tolist()[-1]))+",")
+				population_record.write(str(int(p["chromosome_id"]))+",")
 				population_record.write("Parameters,")
-				for j in range(len(p[0].tolist())-1):
-					population_record.write(str(int(p[0][j]))+",")
+				for j in p.items():
+					if not j[0]=="chromosome_id":
+						value = str(int(j[1])) if type(j[1])==type(int()) else str(j[1])
+						population_record.write(value+",")
 				population_record.write("Fitness,"+str(p.fitness.values[0])+"\n")
-				if p.fitness.values[0]>self.optimal_fitness:
-					for opt in optimal_solutions:
-						check_nonunique.append(all(elem in p[0][:-1] for elem in opt[0][:-1]))
-					if not any(check_nonunique):
-						optimal_solutions.append((p,current_generation))
+				# if p.fitness.values[0]>self.optimal_fitness:
+					# for opt in optimal_solutions:
+					# 	check_nonunique.append(all(elem in p[0][:-1] for elem in opt[0][:-1]))
+					# if not any(check_nonunique):
+					# 	optimal_solutions.append((p,current_generation))
 			population_record.close()
 			end_time = datetime.datetime.now()
 			time_taken = (end_time-start_time).total_seconds();
