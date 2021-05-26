@@ -1305,10 +1305,12 @@ else:
     experiment.setSimulationSteps(10);
     experiment.setRuns(1);
     experiment.setLog(logging_config);
+    experiment.verbose = True;
     ga_search = exp.Search();
     ga_search.parameter_limits = [(0,100),(0,100),(0,100)]
     ga_search.mu = MU;
     ga_search.lamda = LAM;
+    ga_seach.verbose = True;
     #ga_search.eval_func = evaluator;
     ga_search.setPopEvaluationExperiment(experiment);
     ga_search.GA();

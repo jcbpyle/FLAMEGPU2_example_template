@@ -158,8 +158,8 @@ class InitialStateGenerator(object):
 
 	#Register default internal values
 	file = None;
-	global_list = [];
-	agent_list = [];
+	global_list = {};
+	agent_list = {};
 
 	def __init__(self, *args, **kwargs):
 		if len(kwargs)==0:
@@ -175,20 +175,20 @@ class InitialStateGenerator(object):
 		self.file = file if type(file)==type('') else None;
 
 	def __setVariable(self, global_name, global_range, distribution=random.uniform):
-		variable_names = [var[0] for var in self.global_list];
+		variable_names = self.global_list.keys()
 		if global_name in variable_names:
 			variable_update = True;
-			variable_index = variable_names.index(global_name);
 		else:
 			variable_update = False;
-		if type(global_range)==type(tuple()):
-			variable = (global_name, distribution(global_range[0], global_range[1]));
+		if type(global_range)==type(tuple()) and variable_update:
+			self.global_list[variable] = distribution(global_range[0], global_range[1]);
 		else:
-			variable = (global_name, global_range);
-		if variable_update:
-			self.global_list[variable_index] = variable;
-		else:
+			if type(global_range)==type(tuple()):
+				variable = {global_name:distribution(global_range[0], global_range[1])};
+			else:
+				variable = {global_name:global_range};
 			self.global_list.append(variable);
+			
 		
 	def setGlobalFloat(self, global_name, global_range, distribution=random.uniform):
 		r"""Allows user to describe the initialisation of a global float parameter as a constant value, list of values, or tuple of minimum and maximum values from which to randomly generate a value.
