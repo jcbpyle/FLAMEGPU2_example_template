@@ -505,3 +505,4 @@ MigrationBackup/
 # Ionide (cross platform F# VS Code tools) working folder
 .ionide/
 *.csv
+examples/ppg_parameter_experiment/git_dl_and_run.bat

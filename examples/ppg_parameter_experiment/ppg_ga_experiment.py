@@ -1247,8 +1247,10 @@ if ENSEMBLE:
   simulation = pyflamegpu.CUDAEnsemble(model);
 else:
   if PARAMETER_EXPERIMENT:
-    MU = 100
-    LAM = 25
+    #MU = 100
+    #LAM = 25
+    MU = 10
+    LAM = 5
     experiment_initial_state_generator = exp.InitialStateGenerator();
 
     experiment_initial_state_generator.setGlobalFloat("PREY_REPRODUCTION_CHANCE",(0.01,0.1));
@@ -1308,7 +1310,8 @@ else:
     experiment = exp.Experiment("ppg_test_experiment");
     experiment.setModel(model);
     experiment.initialStateGenerator(experiment_initial_state_generator);
-    experiment.setSimulationSteps(1000);
+    #experiment.setSimulationSteps(1000);
+    experiment.setSimulationSteps(10);
     experiment.setRuns(1);
     experiment.setLog(logging_config);
     #experiment.verbose = True;
@@ -1318,7 +1321,8 @@ else:
     ga_search.mu = MU;
     ga_search.lamda = LAM;
     ga_search.max_time = 10000
-    ga_search.max_generations = 196
+    #ga_search.max_generations = 196
+    ga_search.max_generations = 4
     ga_search.verbose = True;
     #ga_search.eval_func = evaluator;
     ga_search.setPopEvaluationExperiment(experiment);
