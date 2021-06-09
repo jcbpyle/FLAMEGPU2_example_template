@@ -494,8 +494,8 @@ class Search(object):
 	optimal_fitness=1.0;
 	#GA generational process values
 	ga_individual_id=int(0);
-	mutation_rate=0.2;
-	random_initialisation_chance=0.05;
+	mutation_rate=0.25;
+	random_initialisation_chance=0.5;
 	#GA fitness calculation
 	fitness_weights=(1.0,);
 	fitness_function=None;
@@ -574,11 +574,11 @@ class Search(object):
 			for i in range(n):
 				individual = population[i].items();
 				for item in individual:
-					if not item[0]=="chromsome_id":
-						if type(item[1])==type(int()):
-							self.evaluator_experiment.generator.setGlobalInt(item[0],item[1]);
+					if not item[0]=='chromsome_id':
+						if type(population[i][item[0]])==type(int()):
+							self.evaluator_experiment.generator.setGlobalInt(item[0],population[i][item[0]]);
 						else:
-							self.evaluator_experiment.generator.setGlobalFloat(item[0],item[1]);
+							self.evaluator_experiment.generator.setGlobalFloat(item[0],population[i][item[0]]);
 				# self.evaluator_experiment.generator.setGlobalInt("PREY_POPULATION_TO_GENERATE", individual[0][1]);
 				# self.evaluator_experiment.generator.setGlobalInt("PREDATOR_POPULATION_TO_GENERATE", individual[1][1]);
 				# self.evaluator_experiment.generator.setGlobalInt("GRASS_POPULATION_TO_GENERATE", individual[2][1]);
@@ -591,7 +591,7 @@ class Search(object):
 					print("\t individual",population[i]["chromosome_id"],"evaluated")
 		return evaluation
 
-	def __mate(self, parent1, parent2):
+	def __mate(self, container, parent1, parent2):
 		r"""A function for crossover between 2 GA individuals (many are available in deap if individuals are in bitstring form)
 		:type parent1: list
 		:param parent1: The first individual selected for crossover
@@ -599,8 +599,30 @@ class Search(object):
 		:param parent2: The second individual selected for crossover
 		"""
 		global toolbox
-		child = toolbox.individual()
-		return child
+		#child = toolbox.individual()
+		count = 0
+		p1 = len(parent1.items());
+		p2 = len(parent2.items());
+		child = parent1.copy();
+		child["chromosome_id"] = int(self.ga_individual_id)
+		self.ga_individual_id += 1
+		child_items = child.items();
+		if p1!=p2:
+			print("Parents don't contain the same number of elements somehow",parent1,parent2)
+		else:
+			for item in child_items:
+				if not item[0]=='chromosome_id':
+					if type(child[item[0]])==type(int()):
+						child[item[0]] = int((parent1[item[0]]+parent2[item[0]])/2);
+					if type(child[item[0]])==type(float()):
+						child[item[0]] = (parent1[item[0]]+parent2[item[0]])/2;
+					if 'POPULATION' in item or 'GRASS' in item:
+						parent = random.uniform(0,1);
+						if parent<0.5:
+							child[item[0]] = parent1[item[0]];
+						else:
+							child[item[0]] = parent2[item[0]];
+		return container(child)
 
 	def __mutate(self, individual):
 		r"""A function for mutating an individual (many are available in deap if individuals are in bitstring form)
@@ -608,7 +630,24 @@ class Search(object):
 		:param individual: The first individual selected for mutation
 		"""
 		global toolbox
-
+		#Heavily favour only a few mutated parameters, but leave small possibility for many mutations
+		changes = np.random.choice([1,2,3,4,5,6,7,8], p=[0.35,0.25,0.15,0.1,0.05,0.05,0.025,0.025])
+		ch = random.sample([0,1,2,3,4,5,6,7], changes)
+		count = 0
+		#print(individual)
+		individual_items = individual.items();
+		for item in individual_items:
+			if count in ch:
+				if type(individual[item[0]])==type(int()):
+					individual[item[0]] += individual[item[0]]+int(individual[item[0]]*random.uniform(-self.mutation_rate,self.mutation_rate));
+				if type(individual[item[0]])==type(float()):
+					individual[item[0]] += individual[item[0]]+(individual[item[0]]*random.uniform(-self.mutation_rate,self.mutation_rate));
+			if not item[0]=='chromosome_id':
+				if individual[item[0]]<self.parameter_limits[item[0]][0]:
+					individual[item[0]] = self.parameter_limits[item[0]][0];
+				if individual[item[0]]>self.parameter_limits[item[0]][1]:
+					individual[item[0]] = self.parameter_limits[item[0]][1];
+			count+=1
 		return individual,
 
 	def __select_parents(self, population, function=None):
@@ -706,10 +745,13 @@ class Search(object):
 					child = toolbox.individual()
 				else:
 					parent1, parent2 = [toolbox.clone(x) for x in toolbox.select_parents(population)]
-					child = toolbox.mate(parent1, parent2)
+					#print("parent1",parent1)
+					child = toolbox.mate(creator.Individual, parent1, parent2)
+					#print("child",child)
 				offspring += [child]
 			#Mutate new candidates
 			for off in offspring:
+				#print("mutating",off)
 				off, = toolbox.mutate(off)
 			generational_evaluations += len(offspring)
 			evaluations = self.__evaluate_population(offspring);

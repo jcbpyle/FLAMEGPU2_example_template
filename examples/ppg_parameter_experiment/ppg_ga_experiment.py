@@ -1250,7 +1250,7 @@ else:
     #MU = 100
     #LAM = 25
     MU = 10
-    LAM = 5
+    LAM = 2
     experiment_initial_state_generator = exp.InitialStateGenerator();
 
     experiment_initial_state_generator.setGlobalFloat("PREY_REPRODUCTION_CHANCE",(0.01,0.1));
@@ -1277,7 +1277,7 @@ else:
     predator_population = exp.AgentPopulation("Predator");
     grass_population = exp.AgentPopulation("Grass");
 
-    prey_population.setPopSizeRandom((64,256));
+    #prey_population.setPopSizeRandom((64,256));
     prey_population.setVariableRandomPerAgent("x",(-1.0,1.0));
     prey_population.setVariableRandomPerAgent("y",(-1.0,1.0));
     prey_population.setVariableRandomPerAgent("fx",(-1.0,1.0));
@@ -1285,9 +1285,9 @@ else:
     prey_population.setVariableFloat("steer_x",0.0);
     prey_population.setVariableFloat("steer_x",0.0);
     prey_population.setVariableFloat("type",2.0);
-    prey_population.setVariableRandomPerAgent("life",(20,200), distribution=random.randint);
+    prey_population.setVariableRandomPerAgent("life",(0,50), distribution=random.randint);
 
-    predator_population.setPopSizeRandom((32,128));
+    #predator_population.setPopSizeRandom((32,128));
     predator_population.setVariableRandomPerAgent("x",(-1.0,1.0));
     predator_population.setVariableRandomPerAgent("y",(-1.0,1.0));
     predator_population.setVariableRandomPerAgent("fx",(-1.0,1.0));
@@ -1295,9 +1295,9 @@ else:
     predator_population.setVariable("steer_x",0.0);
     predator_population.setVariable("steer_x",0.0);
     predator_population.setVariable("type",0.0);
-    predator_population.setVariableRandomPerAgent("life",(20,200), distribution=random.randint);
+    predator_population.setVariableRandomPerAgent("life",(0,40), distribution=random.randint);
 
-    grass_population.setPopSizeRandom((256,1024));
+    #grass_population.setPopSizeRandom((256,1024));
     grass_population.setVariableRandomPerAgent("x",(-1.0,1.0));
     grass_population.setVariableRandomPerAgent("y",(-1.0,1.0));
     grass_population.setVariable("type",1.0);
@@ -1310,19 +1310,19 @@ else:
     experiment = exp.Experiment("ppg_test_experiment");
     experiment.setModel(model);
     experiment.initialStateGenerator(experiment_initial_state_generator);
-    #experiment.setSimulationSteps(1000);
-    experiment.setSimulationSteps(10);
+    experiment.setSimulationSteps(1000);
+    #experiment.setSimulationSteps(2);
     experiment.setRuns(1);
     experiment.setLog(logging_config);
     #experiment.verbose = True;
     ga_search = exp.Search();
     #ga_search.parameter_limits = [(0,100),(0,100),(0,100)]
-    ga_search.parameter_limits = {"PREY_POPULATION_TO_GENERATE":(1,100),"PREDATOR_POPULATION_TO_GENERATE":(1,100),"GRASS_POPULATION_TO_GENERATE":(1,100),"PREY_REPRODUCTION_CHANCE":(0.05,0.1),"PREDATOR_REPRODUCTION_CHANCE":(0.05,0.1),"GAIN_FROM_FOOD_PREY":(1,100),"GAIN_FROM_FOOD_PREDATOR":(1,100),"GRASS_REGROW_CYCLES":(1,100)}
+    ga_search.parameter_limits = {"PREY_POPULATION_TO_GENERATE":(0,5000),"PREDATOR_POPULATION_TO_GENERATE":(0,5000),"GRASS_POPULATION_TO_GENERATE":(0,5000),"PREY_REPRODUCTION_CHANCE":(0.0,0.25),"PREDATOR_REPRODUCTION_CHANCE":(0.0,0.25),"GAIN_FROM_FOOD_PREY":(0,200),"GAIN_FROM_FOOD_PREDATOR":(0,200),"GRASS_REGROW_CYCLES":(0,200)}
     ga_search.mu = MU;
     ga_search.lamda = LAM;
-    ga_search.max_time = 10000
+    ga_search.max_time = 10000000000
     #ga_search.max_generations = 196
-    ga_search.max_generations = 4
+    ga_search.max_generations = 10
     ga_search.verbose = True;
     #ga_search.eval_func = evaluator;
     ga_search.setPopEvaluationExperiment(experiment);
